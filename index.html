@@ -2673,17 +2673,12 @@
 
                 // Serialize the document using HTML serialization (preserves original formatting)
                 let htmlString = doc.documentElement.outerHTML;
-                
-                // Replace &amp; with & in URLs (we want raw & in URLs)
-                htmlString = htmlString.replace(/&amp;/g, '&');
-
-                // Preserve template tokens like <%= ... %> in URLs/attributes
-                htmlString = htmlString
-                    .replace(/&lt;%/g, '<%')
-                    .replace(/%&gt;/g, '%>');
 
                 // Convert common typographic characters to named entities for email compatibility
                 htmlString = encodeEmailSafeEntities(htmlString);
+
+                // Apply URL-specific conversions only inside href attributes
+                htmlString = normalizeTrackingHrefs(htmlString);
 
                 // Create download
                 const blob = new Blob([htmlString], { type: 'text/html' });
@@ -2735,6 +2730,7 @@
 
         function encodeEmailSafeEntities(html) {
             return html
+                .replace(/‑/g, '&#8209;')
                 .replace(/’/g, '&rsquo;')
                 .replace(/‘/g, '&lsquo;')
                 .replace(/”/g, '&rdquo;')
@@ -2747,6 +2743,18 @@
                 .replace(/©/g, '&copy;')
                 .replace(/®/g, '&reg;')
                 .replace(/™/g, '&trade;');
+        }
+
+        function normalizeTrackingHrefs(html) {
+            return html.replace(/href="([^"]*)"/g, (fullMatch, hrefValue) => {
+                const normalizedHref = hrefValue
+                    .replace(/&lt;%/g, '<%')
+                    .replace(/%&gt;/g, '%>')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&#8209;/g, '‑');
+
+                return `href="${normalizedHref}"`;
+            });
         }
 
         // Generate issues display with Fix buttons for mismatches
