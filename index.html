@@ -1,0 +1,2851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Email UTM Checker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2563eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .file-input-zone {
+            background: var(--card-bg);
+            border: 3px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 24px;
+        }
+
+        .file-input-zone:hover,
+        .file-input-zone.drag-over {
+            border-color: var(--primary-color);
+            background: #eff6ff;
+        }
+
+        .file-input-zone.has-file {
+            border-style: solid;
+            border-color: var(--success-color);
+            background: #f0fdf4;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .file-input-zone h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .file-input-zone p {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-info {
+            display: none;
+            background: var(--card-bg);
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-info.show {
+            display: flex;
+        }
+
+        .file-details {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .file-size {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .warning-summary {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+
+        .warning-summary h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .canonical-values {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+
+        .canonical-values h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+
+        .canonical-values .param {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: var(--text-primary);
+            margin: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .canonical-values .param input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .canonical-values .param input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .canonical-values .param label {
+            font-weight: 600;
+            min-width: 140px;
+        }
+
+        .canonical-update-btn {
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .canonical-update-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .canonical-update-btn.hidden {
+            display: none;
+        }
+
+        .warnings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .warning-item {
+            padding: 12px 16px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .warning-item.error {
+            background: #fef2f2;
+            border-left: 4px solid var(--error-color);
+            color: #991b1b;
+        }
+
+        .warning-item.warning {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning-color);
+            color: #92400e;
+        }
+
+        .warning-item.success {
+            background: #f0fdf4;
+            border-left: 4px solid var(--success-color);
+            color: #14532d;
+        }
+
+        .warning-icon {
+            font-size: 18px;
+        }
+
+        .data-section {
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+
+        .data-section h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        thead {
+            background: var(--bg-color);
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        /* Alternating row shading - every other pair of row-main and row-url */
+        tbody tr:nth-child(4n+3),
+        tbody tr:nth-child(4n+4) {
+            background: rgba(100, 116, 139, 0.05);
+        }
+
+        .row-url {
+            background: inherit;
+        }
+
+        .row-url td {
+            padding: 8px 12px;
+        }
+
+        .url-cell-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding-right: 8px;
+        }
+
+        .editable-cell input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+        }
+
+        .editable-cell input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .validation-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .validation-badge.valid {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .validation-badge.invalid {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .validation-badge.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .validation-badge.duplicate {
+            background: #fce7f3;
+            color: #9f1239;
+        }
+
+        .issues-list {
+            font-size: 12px;
+            color: #dc2626;
+            line-height: 1.5;
+        }
+
+        .issues-list div {
+            margin: 2px 0;
+        }
+
+        .issues-list.valid {
+            color: #16a34a;
+        }
+
+        .url-display {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .url-editable {
+            width: 100%;
+            padding: 6px 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.2s ease;
+        }
+
+        .url-editable:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .alt-preview {
+            font-style: italic;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .utm-auto {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .alt-text-cell {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .alt-text-cell input {
+            flex: 1;
+        }
+
+        .url-edit-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .url-edit-cell .url-editable {
+            flex: 1;
+        }
+
+        .url-edit-cell .btn-apply {
+            flex-shrink: 0;
+        }
+
+        .btn-apply {
+            padding: 6px 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .btn-apply:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-apply.hidden {
+            display: none;
+        }
+
+        .btn-fix {
+            padding: 4px 8px;
+            background: var(--warning-color);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            margin-left: 6px;
+        }
+
+        .btn-fix:hover {
+            background: #d97706;
+        }
+
+        .issue-item {
+            display: flex;
+            align-items: center;
+            margin: 2px 0;
+        }
+
+        .img-thumbnail {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .img-thumbnail.broken {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-color);
+            color: var(--text-secondary);
+            font-size: 10px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            opacity: 0.3;
+            margin-bottom: 16px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 12px;
+            width: 900px;
+            max-width: 900px;
+            height: 900px;
+            overflow: auto;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .modal-header-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .modal-image-count {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-color);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            position: relative;
+        }
+
+        .modal-image-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 400px;
+        }
+
+        .modal-image {
+            max-width: 100%;
+            max-height: 300px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-nav-btn {
+            position: absolute;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-lg);
+            z-index: 10;
+        }
+
+        .modal-nav-btn:hover:not(:disabled) {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: scale(1.1);
+        }
+
+        .modal-nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .modal-nav-btn.prev {
+            left: 10px;
+        }
+
+        .modal-nav-btn.next {
+            right: 10px;
+        }
+
+        .modal-alt-section {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .modal-field-group {
+            margin-bottom: 16px;
+        }
+
+        .modal-url-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-url-input-group .url-editable {
+            flex: 1;
+            min-width: 320px;
+        }
+
+        #imagesTable th.alt-column,
+        #imagesTable td.alt-column {
+            min-width: 380px;
+            width: 420px;
+        }
+
+        .modal-url-input-group .btn-apply {
+            flex-shrink: 0;
+        }
+
+        .modal-alt-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        .modal-alt-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .modal-alt-input-group input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .modal-alt-input-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .modal-utm-preview {
+            background: var(--bg-color);
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .modal-utm-preview strong {
+            color: var(--text-primary);
+        }
+
+        .modal-issues {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning-color);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .modal-issues.valid {
+            background: #f0fdf4;
+            border-left-color: var(--success-color);
+            color: #14532d;
+        }
+
+        .modal-issues.has-warnings {
+            background: #fef2f2;
+            border-left-color: var(--error-color);
+            color: #991b1b;
+        }
+
+        .modal-issues-list {
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+        }
+
+        .modal-issues-list li {
+            margin: 4px 0;
+        }
+
+        .img-thumbnail {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .img-thumbnail:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            header {
+                padding: 16px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .file-input-zone {
+                padding: 32px 16px;
+            }
+
+            .data-section {
+                padding: 16px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+            
+            .modal-content {
+                width: 98vw;
+                max-width: 98vw;
+                max-height: 95vh;
+            }
+            
+            .modal-image-container {
+                min-height: 300px;
+            }
+            
+            .modal-body {
+                padding: 12px;
+            }
+            
+            .modal-nav-btn.prev {
+                left: 10px;
+            }
+            
+            .modal-nav-btn.next {
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📧 HTML Email UTM Checker</h1>
+            <p class="subtitle">Validate and edit UTM tracking parameters and alt text in your HTML emails</p>
+        </header>
+
+        <div class="file-input-zone" id="dropZone">
+            <div class="upload-icon">📁</div>
+            <h3>Drop your HTML email here</h3>
+            <p>or click to browse files</p>
+            <input type="file" id="fileInput" accept=".html,.htm">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-details">
+                <span>📄</span>
+                <div>
+                    <div class="file-name" id="fileName"></div>
+                    <div class="file-size" id="fileSize"></div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary" id="clearBtn">Clear</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Parsing email...</p>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="actions">
+                <button type="button" class="btn btn-success" id="exportBtn">
+                    <span>💾</span> Export HTML
+                </button>
+            </div>
+
+            <div class="warning-summary" id="warningSummary">
+                <h2>📊 Validation Summary</h2>
+                <div class="canonical-values" id="canonicalValues"></div>
+                <div class="warnings-list" id="warningsList"></div>
+            </div>
+
+            <div class="data-section">
+                <h2>🔗 Text Links (<span id="linksCount">0</span>)</h2>
+                <div class="table-container">
+                    <table id="linksTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Link Text</th>
+                                <th>utm_source</th>
+                                <th>utm_medium</th>
+                                <th>utm_campaign</th>
+                                <th>utm_content</th>
+                                <th>Issues</th>
+                            </tr>
+                        </thead>
+                        <tbody id="linksTableBody">
+                            <tr>
+                                <td colspan="7" class="empty-state">
+                                    <div class="empty-state-icon">🔍</div>
+                                    <p>No links found</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="data-section">
+                <h2>🖼️ Images (<span id="imagesCount">0</span>)</h2>
+                <div class="table-container">
+                    <table id="imagesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Preview</th>
+                                <th class="alt-column">Alt Text</th>
+                                <th>utm_content</th>
+                                <th>Issues</th>
+                            </tr>
+                        </thead>
+                        <tbody id="imagesTableBody">
+                            <tr>
+                                <td colspan="5" class="empty-state">
+                                    <div class="empty-state-icon">🔍</div>
+                                    <p>No images found</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal-overlay" id="imageModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-header-info">
+                    <h3>Image Preview</h3>
+                    <div class="modal-image-count" id="modalImageCount"></div>
+                </div>
+                <button type="button" class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-image-container">
+                    <button type="button" class="modal-nav-btn prev" id="modalPrevBtn" title="Previous image (←)">
+                        ‹
+                    </button>
+                    <img class="modal-image" id="modalImage" src="" alt="">
+                    <button type="button" class="modal-nav-btn next" id="modalNextBtn" title="Next image (→)">
+                        ›
+                    </button>
+                </div>
+                <div class="modal-alt-section">
+                    <div class="modal-field-group">
+                        <label>Alt Text</label>
+                        <div class="modal-alt-input-group">
+                            <input type="text" id="modalAltInput" placeholder="Enter alt text">
+                            <button type="button" class="btn-apply hidden" id="modalApplyBtn">Apply</button>
+                        </div>
+                        <div class="modal-utm-preview" id="modalUtmPreviewGroup">
+                            <strong>utm_content will be:</strong> <span id="modalUtmPreview">(empty)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-field-group" id="modalLinkUrlGroup" style="display: none;">
+                        <label>Link URL</label>
+                        <div class="modal-url-input-group">
+                            <input type="text" class="url-editable" id="modalLinkUrl" placeholder="Image link URL">
+                            <button type="button" class="btn-apply hidden" id="modalApplyUrlBtn">Apply</button>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-field-group" id="modalIssuesGroup">
+                        <label>Validation Status</label>
+                        <div class="modal-issues valid" id="modalIssues">
+                            <strong>✓ No issues</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        const state = {
+            originalHTML: null,
+            parsedDoc: null,
+            links: [],
+            images: [],
+            fileName: '',
+            fileSize: 0
+        };
+
+        // DOM Elements
+        const elements = {
+            dropZone: document.getElementById('dropZone'),
+            fileInput: document.getElementById('fileInput'),
+            fileInfo: document.getElementById('fileInfo'),
+            fileName: document.getElementById('fileName'),
+            fileSize: document.getElementById('fileSize'),
+            clearBtn: document.getElementById('clearBtn'),
+            loading: document.getElementById('loading'),
+            resultsSection: document.getElementById('resultsSection'),
+            warningSummary: document.getElementById('warningSummary'),
+            canonicalValues: document.getElementById('canonicalValues'),
+            warningsList: document.getElementById('warningsList'),
+            linksCount: document.getElementById('linksCount'),
+            linksTableBody: document.getElementById('linksTableBody'),
+            imagesCount: document.getElementById('imagesCount'),
+            imagesTableBody: document.getElementById('imagesTableBody'),
+            exportBtn: document.getElementById('exportBtn'),
+            imageModal: document.getElementById('imageModal'),
+            modalImage: document.getElementById('modalImage'),
+            modalImageCount: document.getElementById('modalImageCount'),
+            modalAltInput: document.getElementById('modalAltInput'),
+            modalUtmPreview: document.getElementById('modalUtmPreview'),
+            modalApplyBtn: document.getElementById('modalApplyBtn'),
+            modalClose: document.getElementById('modalClose'),
+            modalPrevBtn: document.getElementById('modalPrevBtn'),
+            modalNextBtn: document.getElementById('modalNextBtn'),
+            modalLinkUrl: document.getElementById('modalLinkUrl'),
+            modalLinkUrlGroup: document.getElementById('modalLinkUrlGroup'),
+            modalApplyUrlBtn: document.getElementById('modalApplyUrlBtn'),
+            modalUtmPreviewGroup: document.getElementById('modalUtmPreviewGroup'),
+            modalIssues: document.getElementById('modalIssues'),
+            modalIssuesGroup: document.getElementById('modalIssuesGroup')
+        };
+
+        // Initialize app
+        function init() {
+            setupEventListeners();
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // File input zone click
+            elements.dropZone.addEventListener('click', () => {
+                elements.fileInput.click();
+            });
+
+            // File input change
+            elements.fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+
+            // Drag and drop
+            elements.dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                elements.dropZone.classList.add('drag-over');
+            });
+
+            elements.dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                elements.dropZone.classList.remove('drag-over');
+            });
+
+            elements.dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                elements.dropZone.classList.remove('drag-over');
+                
+                if (e.dataTransfer.files.length > 0) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+
+            // Clear button
+            elements.clearBtn.addEventListener('click', () => {
+                clearApp();
+            });
+
+            // Export button
+            elements.exportBtn.addEventListener('click', () => {
+                exportHTML();
+            });
+
+            // Modal close button
+            elements.modalClose.addEventListener('click', () => {
+                closeImageModal();
+            });
+
+            // Modal overlay click (close on outside click)
+            elements.imageModal.addEventListener('click', (e) => {
+                if (e.target === elements.imageModal) {
+                    closeImageModal();
+                }
+            });
+
+            // Modal alt text input
+            elements.modalAltInput.addEventListener('input', (e) => {
+                const imageIndex = parseInt(e.target.dataset.imageIndex);
+                
+                // Update utm_content preview (only for images with parent links that originally had utm_content)
+                if (state.images[imageIndex] && state.images[imageIndex].parentLinkUtmParams && state.images[imageIndex].hasOriginalUtmContent) {
+                    const sanitized = sanitizeForUTM(e.target.value);
+                    elements.modalUtmPreview.textContent = sanitized || '(empty)';
+                }
+                
+                // Show/hide apply button based on whether value changed
+                const originalValue = e.target.dataset.originalValue || '';
+                const hasChanged = e.target.value !== originalValue;
+                if (hasChanged) {
+                    elements.modalApplyBtn.classList.remove('hidden');
+                } else {
+                    elements.modalApplyBtn.classList.add('hidden');
+                }
+            });
+
+            // Modal apply button
+            elements.modalApplyBtn.addEventListener('click', () => {
+                applyModalAltText();
+            });
+
+            // Modal alt text Enter key
+            elements.modalAltInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    applyModalAltText();
+                }
+            });
+
+            // Modal link URL input - show/hide Apply button
+            elements.modalLinkUrl.addEventListener('input', () => {
+                const originalValue = elements.modalLinkUrl.dataset.originalValue || '';
+                const currentValue = elements.modalLinkUrl.value;
+                const hasChanged = currentValue !== originalValue;
+                
+                if (hasChanged) {
+                    elements.modalApplyUrlBtn.classList.remove('hidden');
+                } else {
+                    elements.modalApplyUrlBtn.classList.add('hidden');
+                }
+            });
+
+            // Modal link URL Apply button
+            elements.modalApplyUrlBtn.addEventListener('click', () => {
+                const imageIndex = parseInt(elements.modalAltInput.dataset.imageIndex);
+                const newUrl = elements.modalLinkUrl.value;
+                
+                // Update parent link href
+                state.images[imageIndex].parentLinkHref = newUrl;
+                
+                // Re-parse UTM parameters from parent link
+                try {
+                    let utmParams;
+                    if (newUrl.startsWith('#') && newUrl.includes('?')) {
+                        const queryString = newUrl.substring(newUrl.indexOf('?'));
+                        const params = new URLSearchParams(queryString);
+                        utmParams = {
+                            source: params.get('utm_source') || '',
+                            medium: params.get('utm_medium') || '',
+                            campaign: params.get('utm_campaign') || '',
+                            content: params.get('utm_content') || '',
+                            term: params.get('utm_term') || ''
+                        };
+                    } else {
+                        const url = new URL(newUrl, 'http://dummy.com');
+                        utmParams = {
+                            source: url.searchParams.get('utm_source') || '',
+                            medium: url.searchParams.get('utm_medium') || '',
+                            campaign: url.searchParams.get('utm_campaign') || '',
+                            content: url.searchParams.get('utm_content') || '',
+                            term: url.searchParams.get('utm_term') || ''
+                        };
+                    }
+                    state.images[imageIndex].parentLinkUtmParams = utmParams;
+                } catch (err) {
+                    state.images[imageIndex].parentLinkUtmParams = null;
+                }
+                
+                // Update original value to reflect saved state
+                elements.modalLinkUrl.dataset.originalValue = newUrl;
+                
+                // Hide apply button
+                elements.modalApplyUrlBtn.classList.add('hidden');
+                
+                // Re-validate and refresh modal display
+                validateAll();
+                renderTables();
+                renderWarnings();
+                
+                // Update modal issues display
+                updateModalIssuesDisplay(imageIndex);
+            });
+
+            // ESC key to close modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && elements.imageModal.classList.contains('show')) {
+                    closeImageModal();
+                }
+                // Arrow keys for navigation (only when not focused on input fields)
+                if (elements.imageModal.classList.contains('show')) {
+                    const isAltInputFocused = document.activeElement === elements.modalAltInput;
+                    const isLinkUrlFocused = document.activeElement === elements.modalLinkUrl;
+                    if (!isAltInputFocused && !isLinkUrlFocused) {
+                        if (e.key === 'ArrowLeft') {
+                            navigateImage('prev');
+                        } else if (e.key === 'ArrowRight') {
+                            navigateImage('next');
+                        }
+                    }
+                }
+            });
+
+            // Modal navigation buttons
+            elements.modalPrevBtn.addEventListener('click', () => {
+                navigateImage('prev');
+            });
+
+            elements.modalNextBtn.addEventListener('click', () => {
+                navigateImage('next');
+            });
+        }
+
+        // Handle file upload
+        function handleFile(file) {
+            // Validate file type
+            if (!file.name.endsWith('.html') && !file.name.endsWith('.htm')) {
+                alert('Please select an HTML file (.html or .htm)');
+                return;
+            }
+
+            // Store file info
+            state.fileName = file.name;
+            state.fileSize = file.size;
+
+            // Update UI
+            elements.fileName.textContent = file.name;
+            elements.fileSize.textContent = formatFileSize(file.size);
+            elements.fileInfo.classList.add('show');
+            elements.dropZone.classList.add('has-file');
+
+            // Show loading
+            elements.loading.classList.add('show');
+            elements.resultsSection.classList.remove('show');
+
+            // Read file
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                state.originalHTML = e.target.result;
+                setTimeout(() => {
+                    parseHTML(state.originalHTML);
+                }, 100);
+            };
+            reader.onerror = () => {
+                alert('Error reading file. Please try again.');
+                elements.loading.classList.remove('show');
+            };
+            reader.readAsText(file);
+        }
+
+        // Parse HTML content
+        function parseHTML(htmlContent) {
+            try {
+                const parser = new DOMParser();
+                state.parsedDoc = parser.parseFromString(htmlContent, 'text/html');
+
+                // Extract links and images
+                extractLinks();
+                extractImages();
+
+                // Validate
+                validateAll();
+
+                // Render UI
+                renderTables();
+                renderWarnings();
+
+                // Show results
+                elements.loading.classList.remove('show');
+                elements.resultsSection.classList.add('show');
+            } catch (error) {
+                console.error('Error parsing HTML:', error);
+                alert('Error parsing HTML file. Please check if the file is valid.');
+                elements.loading.classList.remove('show');
+            }
+        }
+
+        // Extract all links from the document
+        function extractLinks() {
+            state.links = [];
+            const linkElements = state.parsedDoc.querySelectorAll('a[href]');
+            
+            linkElements.forEach((linkEl, index) => {
+                const href = linkEl.getAttribute('href');
+                let url, utmParams;
+                
+                // Check if link only contains an image (skip these - they'll be in images section)
+                const hasOnlyImage = linkEl.children.length === 1 && 
+                                   linkEl.children[0].tagName === 'IMG' && 
+                                   linkEl.textContent.trim() === '';
+                
+                if (hasOnlyImage) {
+                    return; // Skip image-only links
+                }
+                
+                try {
+                    // Special handling for anchor links starting with #
+                    if (href.startsWith('#') && href.includes('?')) {
+                        // Parse query string from hash portion (e.g., #?utm_source=test)
+                        const queryString = href.substring(href.indexOf('?'));
+                        url = null; // Not a real URL
+                        utmParams = parseUTMParams(queryString);
+                    } else {
+                        // Try to parse as normal URL
+                        url = new URL(href, 'http://dummy.com');
+                        // Use custom parser to preserve spaces and special chars for validation
+                        const queryString = url.search;
+                        utmParams = parseUTMParams(queryString);
+                    }
+                } catch (e) {
+                    // Invalid URL - try to extract query string manually
+                    url = null;
+                    const queryStart = href.indexOf('?');
+                    if (queryStart !== -1) {
+                        const queryString = href.substring(queryStart);
+                        utmParams = parseUTMParams(queryString);
+                    } else {
+                        utmParams = {
+                            source: '',
+                            medium: '',
+                            campaign: '',
+                            content: '',
+                            term: ''
+                        };
+                    }
+                }
+
+                state.links.push({
+                    index,
+                    element: linkEl,
+                    href,
+                    url,
+                    text: linkEl.textContent.trim() || '[No text]',
+                    utmParams,
+                    validation: {
+                        hasRequiredParams: false,
+                        warnings: [],
+                        isDuplicate: false
+                    }
+                });
+            });
+        }
+
+        // Extract all images from the document
+        function extractImages() {
+            state.images = [];
+            const imageElements = state.parsedDoc.querySelectorAll('img');
+            
+            imageElements.forEach((imgEl, index) => {
+                const src = imgEl.getAttribute('src') || '';
+                const alt = imgEl.getAttribute('alt') || '';
+                
+                // Check if image is wrapped in a link
+                let parentLink = null;
+                let parentLinkHref = null;
+                let parentLinkUtmParams = null;
+                let parentElement = imgEl.parentElement;
+                while (parentElement && parentElement.tagName !== 'BODY') {
+                    if (parentElement.tagName === 'A') {
+                        parentLink = parentElement;
+                        parentLinkHref = parentElement.getAttribute('href');
+                        
+                        // Extract UTM params from parent link
+                        try {
+                            if (parentLinkHref.startsWith('#') && parentLinkHref.includes('?')) {
+                                // Parse query string from anchor link
+                                const queryString = parentLinkHref.substring(parentLinkHref.indexOf('?'));
+                                parentLinkUtmParams = parseUTMParams(queryString);
+                            } else {
+                                // Parse as normal URL
+                                const url = new URL(parentLinkHref, 'http://dummy.com');
+                                const queryString = url.search;
+                                parentLinkUtmParams = parseUTMParams(queryString);
+                            }
+                        } catch (e) {
+                            // Invalid URL - try to extract query string manually
+                            const queryStart = parentLinkHref.indexOf('?');
+                            if (queryStart !== -1) {
+                                const queryString = parentLinkHref.substring(queryStart);
+                                parentLinkUtmParams = parseUTMParams(queryString);
+                            } else {
+                                parentLinkUtmParams = null;
+                            }
+                        }
+                        break;
+                    }
+                    parentElement = parentElement.parentElement;
+                }
+
+                state.images.push({
+                    index,
+                    element: imgEl,
+                    src,
+                    alt,
+                    parentLink,
+                    parentLinkHref,
+                    parentLinkUtmParams,
+                    hasOriginalUtmContent: parentLinkUtmParams && parentLinkUtmParams.content !== '', // Track if original link had utm_content
+                    validation: {
+                        hasAlt: alt !== '',
+                        isDuplicate: false,
+                        warnings: []
+                    }
+                });
+            });
+
+            // Update parent link URLs with converted utm_content from alt text
+            state.images.forEach(img => {
+                if (img.parentLinkHref && img.parentLinkUtmParams && img.hasOriginalUtmContent && img.alt) {
+                    const sanitizedAlt = sanitizeForUTM(img.alt);
+                    
+                    try {
+                        let newHref;
+                        
+                        if (img.parentLinkHref.startsWith('#') && img.parentLinkHref.includes('?')) {
+                            const hashPart = img.parentLinkHref.substring(0, img.parentLinkHref.indexOf('?'));
+                            const queryString = img.parentLinkHref.substring(img.parentLinkHref.indexOf('?'));
+                            const params = new URLSearchParams(queryString);
+                            
+                            if (img.parentLinkUtmParams.source) params.set('utm_source', img.parentLinkUtmParams.source);
+                            if (img.parentLinkUtmParams.medium) params.set('utm_medium', img.parentLinkUtmParams.medium);
+                            if (img.parentLinkUtmParams.campaign) params.set('utm_campaign', img.parentLinkUtmParams.campaign);
+                            if (sanitizedAlt) params.set('utm_content', sanitizedAlt);
+                            
+                            newHref = hashPart + '?' + params.toString();
+                        } else {
+                            const url = new URL(img.parentLinkHref, 'http://dummy.com');
+                            
+                            if (img.parentLinkUtmParams.source) url.searchParams.set('utm_source', img.parentLinkUtmParams.source);
+                            if (img.parentLinkUtmParams.medium) url.searchParams.set('utm_medium', img.parentLinkUtmParams.medium);
+                            if (img.parentLinkUtmParams.campaign) url.searchParams.set('utm_campaign', img.parentLinkUtmParams.campaign);
+                            if (sanitizedAlt) url.searchParams.set('utm_content', sanitizedAlt);
+                            
+                            newHref = img.parentLinkHref.startsWith('http')
+                                ? url.toString()
+                                : url.pathname + url.search + url.hash;
+                        }
+                        
+                        img.parentLinkHref = newHref;
+                        // Also update the tracked utm_content value
+                        img.parentLinkUtmParams.content = sanitizedAlt;
+                    } catch (e) {
+                        console.warn('Could not update parent link URL on extract:', e);
+                    }
+                }
+            });
+        }
+
+        // Sanitize text for UTM content (kebab-case)
+        function sanitizeForUTM(text) {
+            return text
+                .replace(/&/g, 'and')            // Replace & with 'and'
+                .replace(/\s+/g, '-')           // Replace spaces with hyphens
+                .replace(/[^a-zA-Z0-9-]/g, '')  // Remove special characters (preserve case)
+                .replace(/-+/g, '-')             // Remove consecutive hyphens
+                .replace(/^-|-$/g, '');          // Remove leading/trailing hyphens
+        }
+
+        // Parse UTM parameters from query string, preserving all characters including spaces
+        function parseUTMParams(queryString) {
+            const params = {
+                source: '',
+                medium: '',
+                campaign: '',
+                content: '',
+                term: ''
+            };
+
+            if (!queryString) return params;
+
+            // Remove leading ? or # if present
+            queryString = queryString.replace(/^[?#]/, '');
+
+            // Split by & to get individual parameters
+            const pairs = queryString.split('&');
+            
+            pairs.forEach(pair => {
+                const [key, ...valueParts] = pair.split('=');
+                const value = valueParts.join('='); // Rejoin in case value contains =
+                
+                // Try to decode, but use raw value if decoding fails
+                let decodedValue = '';
+                try {
+                    decodedValue = decodeURIComponent(value || '');
+                } catch (e) {
+                    decodedValue = value || '';
+                }
+                
+                if (key === 'utm_source') params.source = decodedValue;
+                else if (key === 'utm_medium') params.medium = decodedValue;
+                else if (key === 'utm_campaign') params.campaign = decodedValue;
+                else if (key === 'utm_content') params.content = decodedValue;
+                else if (key === 'utm_term') params.term = decodedValue;
+            });
+
+            return params;
+        }
+
+        // Check if a value has invalid characters (spaces or special chars)
+        function hasInvalidChars(text) {
+            return /[\s]/.test(text) || /[^a-zA-Z0-9-]/.test(text);
+        }
+
+        // Validate all links and images
+        function validateAll() {
+            // Find canonical UTM values (from first complete link)
+            let canonical = {
+                source: '',
+                medium: '',
+                campaign: ''
+            };
+
+            for (const link of state.links) {
+                if (link.utmParams.source && link.utmParams.medium && link.utmParams.campaign) {
+                    canonical = {
+                        source: link.utmParams.source,
+                        medium: link.utmParams.medium,
+                        campaign: link.utmParams.campaign
+                    };
+                    break;
+                }
+            }
+
+            state.canonical = canonical;
+
+            // Validate each link
+            state.links.forEach(link => {
+                link.validation.warnings = [];
+                
+                // Check for missing required params
+                if (!link.utmParams.source) {
+                    link.validation.warnings.push('Missing utm_source');
+                } else if (canonical.source && link.utmParams.source !== canonical.source) {
+                    link.validation.warnings.push(`utm_source mismatch (expected: ${canonical.source})`);
+                } else if (hasInvalidChars(link.utmParams.source)) {
+                    const sanitized = sanitizeForUTM(link.utmParams.source);
+                    link.validation.warnings.push(`utm_source has invalid characters (suggested: ${sanitized})`);
+                }
+
+                if (!link.utmParams.medium) {
+                    link.validation.warnings.push('Missing utm_medium');
+                } else if (canonical.medium && link.utmParams.medium !== canonical.medium) {
+                    link.validation.warnings.push(`utm_medium mismatch (expected: ${canonical.medium})`);
+                } else if (hasInvalidChars(link.utmParams.medium)) {
+                    const sanitized = sanitizeForUTM(link.utmParams.medium);
+                    link.validation.warnings.push(`utm_medium has invalid characters (suggested: ${sanitized})`);
+                }
+
+                if (!link.utmParams.campaign) {
+                    link.validation.warnings.push('Missing utm_campaign');
+                } else if (canonical.campaign && link.utmParams.campaign !== canonical.campaign) {
+                    link.validation.warnings.push(`utm_campaign mismatch (expected: ${canonical.campaign})`);
+                } else if (hasInvalidChars(link.utmParams.campaign)) {
+                    const sanitized = sanitizeForUTM(link.utmParams.campaign);
+                    link.validation.warnings.push(`utm_campaign has invalid characters (suggested: ${sanitized})`);
+                }
+
+                if (!link.utmParams.content) {
+                    link.validation.warnings.push('Missing utm_content');
+                } else if (hasInvalidChars(link.utmParams.content)) {
+                    const sanitized = sanitizeForUTM(link.utmParams.content);
+                    link.validation.warnings.push(`utm_content has invalid characters (suggested: ${sanitized})`);
+                }
+
+                link.validation.hasRequiredParams = 
+                    link.utmParams.source && 
+                    link.utmParams.medium && 
+                    link.utmParams.campaign &&
+                    link.utmParams.content;
+            });
+
+            // Check for duplicate utm_content
+            const contentCounts = new Map();
+            state.links.forEach(link => {
+                if (link.utmParams.content) {
+                    contentCounts.set(link.utmParams.content, (contentCounts.get(link.utmParams.content) || 0) + 1);
+                }
+            });
+
+            // Check for duplicate alt text (only for images with parent links that have UTM parameters and originally had utm_content)
+            const altCounts = new Map();
+            state.images.forEach(img => {
+                if (img.alt && img.parentLinkUtmParams && img.hasOriginalUtmContent) {
+                    const sanitized = sanitizeForUTM(img.alt);
+                    altCounts.set(sanitized, (altCounts.get(sanitized) || 0) + 1);
+                }
+            });
+
+            // Mark duplicates
+            state.links.forEach(link => {
+                if (link.utmParams.content && contentCounts.get(link.utmParams.content) > 1) {
+                    link.validation.isDuplicate = true;
+                    link.validation.warnings.push('Duplicate utm_content');
+                }
+            });
+
+            state.images.forEach(img => {
+                img.validation.warnings = [];
+                
+                // Only validate utm_content for images with parent links that originally had utm_content
+                if (img.parentLinkUtmParams && img.hasOriginalUtmContent) {
+                    const sanitized = sanitizeForUTM(img.alt);
+                    if (sanitized && altCounts.get(sanitized) > 1) {
+                        img.validation.isDuplicate = true;
+                        img.validation.warnings.push('Duplicate alt text (would create duplicate utm_content)');
+                    }
+                }
+                
+                if (!img.alt) {
+                    img.validation.warnings.push('Missing alt text');
+                }
+                
+                // Validate parent link UTM parameters if image is in a link
+                if (img.parentLinkUtmParams) {
+                    const params = img.parentLinkUtmParams;
+                    
+                    if (!params.source) {
+                        img.validation.warnings.push('Parent link missing utm_source');
+                    } else if (canonical.source && params.source !== canonical.source) {
+                        img.validation.warnings.push(`Parent link utm_source mismatch (expected: ${canonical.source})`);
+                    } else if (hasInvalidChars(params.source)) {
+                        const sanitized = sanitizeForUTM(params.source);
+                        img.validation.warnings.push(`Parent link utm_source has invalid characters (suggested: ${sanitized})`);
+                    }
+
+                    if (!params.medium) {
+                        img.validation.warnings.push('Parent link missing utm_medium');
+                    } else if (canonical.medium && params.medium !== canonical.medium) {
+                        img.validation.warnings.push(`Parent link utm_medium mismatch (expected: ${canonical.medium})`);
+                    } else if (hasInvalidChars(params.medium)) {
+                        const sanitized = sanitizeForUTM(params.medium);
+                        img.validation.warnings.push(`Parent link utm_medium has invalid characters (suggested: ${sanitized})`);
+                    }
+
+                    if (!params.campaign) {
+                        img.validation.warnings.push('Parent link missing utm_campaign');
+                    } else if (canonical.campaign && params.campaign !== canonical.campaign) {
+                        img.validation.warnings.push(`Parent link utm_campaign mismatch (expected: ${canonical.campaign})`);
+                    } else if (hasInvalidChars(params.campaign)) {
+                        const sanitized = sanitizeForUTM(params.campaign);
+                        img.validation.warnings.push(`Parent link utm_campaign has invalid characters (suggested: ${sanitized})`);
+                    }
+
+                    // Only validate utm_content if it was originally present
+                    if (img.hasOriginalUtmContent && !params.content) {
+                        img.validation.warnings.push('Parent link missing utm_content');
+                    } else if (img.hasOriginalUtmContent && params.content && hasInvalidChars(params.content)) {
+                        const sanitized = sanitizeForUTM(params.content);
+                        img.validation.warnings.push(`Parent link utm_content has invalid characters (suggested: ${sanitized})`);
+                    }
+                }
+            });
+        }
+
+        // Render tables
+        function renderTables() {
+            // Update counts
+            elements.linksCount.textContent = state.links.length;
+            elements.imagesCount.textContent = state.images.length;
+
+            // Render links table
+            if (state.links.length === 0) {
+                elements.linksTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <p>No text links found</p>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                elements.linksTableBody.innerHTML = state.links.map((link, idx) => {
+                    const issuesDisplay = generateIssuesDisplay(link.validation.warnings, idx, 'link');
+
+                    return `
+                        <tr class="row-main">
+                            <td rowspan="2">${idx + 1}</td>
+                            <td>${escapeHtml(link.text)}</td>
+                            <td>${escapeHtml(link.utmParams.source)}</td>
+                            <td>${escapeHtml(link.utmParams.medium)}</td>
+                            <td>${escapeHtml(link.utmParams.campaign)}</td>
+                            <td class="editable-cell">
+                                <div class="url-edit-cell">
+                                    <input type="text" 
+                                           value="${escapeHtml(link.utmParams.content)}" 
+                                           data-link-index="${idx}"
+                                           data-original-value="${escapeHtml(link.utmParams.content)}"
+                                           class="utm-content-input">
+                                    <button type="button" class="btn-apply hidden" data-link-index="${idx}" data-field="utm-content">Apply</button>
+                                </div>
+                            </td>
+                            <td>${issuesDisplay}</td>
+                        </tr>
+                        <tr class="row-url">
+                            <td colspan="6">
+                                <span class="url-cell-label">URL:</span>
+                                <div class="url-edit-cell">
+                                    <input type="text" 
+                                           class="url-editable link-url-input"
+                                           value="${escapeHtml(link.href)}" 
+                                           data-link-index="${idx}"
+                                           data-original-value="${escapeHtml(link.href)}"
+                                           title="${escapeHtml(link.href)}">
+                                    <button type="button" class="btn-apply hidden" data-link-index="${idx}">Apply</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // Add event listeners for link URL input fields
+                document.querySelectorAll('.link-url-input').forEach(input => {
+                    // Show/hide apply button as user types
+                    input.addEventListener('input', (e) => {
+                        const linkIndex = parseInt(e.target.dataset.linkIndex);
+                        const originalValue = e.target.dataset.originalValue;
+                        const currentValue = e.target.value;
+                        const hasChanged = currentValue !== originalValue;
+                        
+                        // Show/hide apply button
+                        const applyBtn = e.target.parentElement.querySelector('.btn-apply');
+                        if (hasChanged) {
+                            applyBtn.classList.remove('hidden');
+                        } else {
+                            applyBtn.classList.add('hidden');
+                        }
+                    });
+                });
+
+                // Add event listeners for Fix buttons (links)
+                document.querySelectorAll('.btn-fix[data-item-type="link"]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const itemIndex = parseInt(e.target.dataset.itemIndex);
+                        const isParentLink = e.target.dataset.isParentLink === 'true';
+                        const utmParam = e.target.dataset.utmParam;
+                        const expectedValue = e.target.dataset.expectedValue;
+                        
+                        fixUtmMismatch(itemIndex, 'link', isParentLink, utmParam, expectedValue);
+                    });
+                });
+
+                // Add event listeners for link URL Apply buttons
+                document.querySelectorAll('.row-url .btn-apply[data-link-index]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const linkIndex = parseInt(e.target.dataset.linkIndex);
+                        const input = e.target.parentElement.querySelector('.link-url-input');
+                        const newUrl = input.value;
+                        
+                        // Update href
+                        state.links[linkIndex].href = newUrl;
+                        
+                        // Re-parse UTM parameters from new URL
+                        try {
+                            let utmParams;
+                            if (newUrl.startsWith('#') && newUrl.includes('?')) {
+                                // Parse query string from anchor link
+                                const queryString = newUrl.substring(newUrl.indexOf('?'));
+                                const params = new URLSearchParams(queryString);
+                                utmParams = {
+                                    source: params.get('utm_source') || '',
+                                    medium: params.get('utm_medium') || '',
+                                    campaign: params.get('utm_campaign') || '',
+                                    content: params.get('utm_content') || '',
+                                    term: params.get('utm_term') || ''
+                                };
+                                state.links[linkIndex].url = null;
+                            } else {
+                                // Parse as normal URL
+                                const url = new URL(newUrl, 'http://dummy.com');
+                                utmParams = {
+                                    source: url.searchParams.get('utm_source') || '',
+                                    medium: url.searchParams.get('utm_medium') || '',
+                                    campaign: url.searchParams.get('utm_campaign') || '',
+                                    content: url.searchParams.get('utm_content') || '',
+                                    term: url.searchParams.get('utm_term') || ''
+                                };
+                                state.links[linkIndex].url = url;
+                            }
+                            state.links[linkIndex].utmParams = utmParams;
+                        } catch (err) {
+                            // Invalid URL - reset params
+                            state.links[linkIndex].url = null;
+                            state.links[linkIndex].utmParams = {
+                                source: '',
+                                medium: '',
+                                campaign: '',
+                                content: '',
+                                term: ''
+                            };
+                        }
+                        
+                        // Update original value to reflect saved state
+                        input.dataset.originalValue = newUrl;
+                        
+                        // Hide apply button
+                        e.target.classList.add('hidden');
+                        
+                        // Re-validate and render
+                        validateAll();
+                        renderTables();
+                        renderWarnings();
+                    });
+                });
+
+                // Add event listeners for utm_content input fields
+                document.querySelectorAll('.utm-content-input').forEach(input => {
+                    // Show/hide apply button as user types
+                    input.addEventListener('input', (e) => {
+                        const linkIndex = parseInt(e.target.dataset.linkIndex);
+                        const originalValue = e.target.dataset.originalValue;
+                        const currentValue = e.target.value;
+                        const hasChanged = currentValue !== originalValue;
+                        
+                        // Show/hide apply button
+                        const applyBtn = e.target.parentElement.querySelector('.btn-apply[data-field="utm-content"]');
+                        if (applyBtn) {
+                            if (hasChanged) {
+                                applyBtn.classList.remove('hidden');
+                            } else {
+                                applyBtn.classList.add('hidden');
+                            }
+                        }
+                    });
+                });
+
+                // Add event listeners for utm_content Apply buttons
+                document.querySelectorAll('.utm-content-input + .btn-apply[data-field="utm-content"]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const linkIndex = parseInt(e.target.dataset.linkIndex);
+                        const input = e.target.parentElement.querySelector('.utm-content-input');
+                        const rawValue = input.value;
+                        const sanitizedValue = sanitizeForUTM(rawValue);
+                        
+                        // Store sanitized value in state
+                        state.links[linkIndex].utmParams.content = sanitizedValue;
+                        
+                        // Update input field to show sanitized value
+                        input.value = sanitizedValue;
+                        
+                        // Rebuild the URL with sanitized parameter
+                        const link = state.links[linkIndex];
+                        
+                        try {
+                            if (link.href.startsWith('#') && link.href.includes('?')) {
+                                const hashPart = link.href.substring(0, link.href.indexOf('?'));
+                                const params = new URLSearchParams(link.href.substring(link.href.indexOf('?')));
+                                params.set('utm_content', sanitizedValue);
+                                link.href = hashPart + '?' + params.toString();
+                            } else {
+                                const url = new URL(link.href, 'http://dummy.com');
+                                url.searchParams.set('utm_content', sanitizedValue);
+                                
+                                // Preserve relative vs absolute URL format
+                                if (!link.href.startsWith('http')) {
+                                    link.href = url.pathname + url.search + url.hash;
+                                } else {
+                                    link.href = url.toString();
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('Could not update link URL:', e);
+                        }
+                        
+                        // Update original value to reflect the new state
+                        input.dataset.originalValue = sanitizedValue;
+                        
+                        // Hide the apply button
+                        e.target.classList.add('hidden');
+                        
+                        // Validate and re-render
+                        validateAll();
+                        renderTables();
+                        renderWarnings();
+                    });
+                });
+            }
+
+            // Render images table
+            if (state.images.length === 0) {
+                elements.imagesTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <div class="empty-state-icon">🔍</div>
+                            <p>No images found</p>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                elements.imagesTableBody.innerHTML = state.images.map((img, idx) => {
+                    const issuesDisplay = generateIssuesDisplay(img.validation.warnings, idx, 'image');
+
+                    // Only show utm_content if image has a parent link that originally had utm_content
+                    const utmContent = (img.parentLinkUtmParams && img.hasOriginalUtmContent) ? sanitizeForUTM(img.alt) : null;
+                    const utmContentDisplay = (img.parentLinkUtmParams && img.hasOriginalUtmContent)
+                        ? `<div class="utm-auto" data-image-index="${idx}">${escapeHtml(utmContent || '(empty)')}</div>`
+                        : '<span style="color: #94a3b8; font-style: italic;">N/A</span>';
+                    
+                    const imgPreview = img.src.startsWith('data:') || img.src.startsWith('http') 
+                        ? `<img src="${escapeHtml(img.src)}" class="img-thumbnail" alt="Preview" data-image-index="${idx}" onerror="this.style.display='none'">`
+                        : `<div class="img-thumbnail broken">No preview</div>`;
+
+                    const linkDisplay = img.parentLinkHref 
+                        ? `<div class="url-edit-cell">
+                               <input type="text" 
+                                      class="url-editable image-url-input"
+                                      value="${escapeHtml(img.parentLinkHref)}" 
+                                      data-image-index="${idx}"
+                                      data-original-value="${escapeHtml(img.parentLinkHref)}"
+                                      title="${escapeHtml(img.parentLinkHref)}">
+                               <button type="button" class="btn-apply hidden" data-image-index="${idx}">Apply</button>
+                           </div>`
+                        : '<span style="color: #94a3b8; font-style: italic;">Not linked</span>';
+
+                    return `
+                        <tr class="row-main">
+                            <td rowspan="2">${idx + 1}</td>
+                            <td rowspan="2">${imgPreview}</td>
+                            <td class="editable-cell alt-column">
+                                <div class="alt-text-cell">
+                                    <input type="text" 
+                                           value="${escapeHtml(img.alt)}" 
+                                           data-image-index="${idx}"
+                                           data-original-value="${escapeHtml(img.alt)}"
+                                           class="alt-text-input"
+                                           placeholder="Enter alt text">
+                                    <button type="button" class="btn-apply hidden" 
+                                            data-image-index="${idx}">
+                                        Apply
+                                    </button>
+                                </div>
+                            </td>
+                            <td>${utmContentDisplay}</td>
+                            <td>${issuesDisplay}</td>
+                        </tr>
+                        <tr class="row-url">
+                            <td colspan="3">
+                                <span class="url-cell-label">Link URL:</span>
+                                ${linkDisplay}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // Add event listeners for image link URL input fields
+                document.querySelectorAll('.image-url-input').forEach(input => {
+                    // Show/hide apply button as user types
+                    input.addEventListener('input', (e) => {
+                        const imageIndex = parseInt(e.target.dataset.imageIndex);
+                        const originalValue = e.target.dataset.originalValue;
+                        const currentValue = e.target.value;
+                        const hasChanged = currentValue !== originalValue;
+                        
+                        // Show/hide apply button
+                        const applyBtn = e.target.parentElement.querySelector('.btn-apply');
+                        if (hasChanged) {
+                            applyBtn.classList.remove('hidden');
+                        } else {
+                            applyBtn.classList.add('hidden');
+                        }
+                    });
+                });
+
+                // Add event listeners for Fix buttons (images)
+                document.querySelectorAll('.btn-fix[data-item-type="image"]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const itemIndex = parseInt(e.target.dataset.itemIndex);
+                        const isParentLink = e.target.dataset.isParentLink === 'true';
+                        const utmParam = e.target.dataset.utmParam;
+                        const expectedValue = e.target.dataset.expectedValue;
+                        
+                        fixUtmMismatch(itemIndex, 'image', isParentLink, utmParam, expectedValue);
+                    });
+                });
+
+                // Add event listeners for image link URL Apply buttons
+                document.querySelectorAll('.row-url .btn-apply[data-image-index]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const imageIndex = parseInt(e.target.dataset.imageIndex);
+                        const input = e.target.parentElement.querySelector('.image-url-input');
+                        const newUrl = input.value;
+                        
+                        // Update parent link href
+                        state.images[imageIndex].parentLinkHref = newUrl;
+                        
+                        // Re-parse UTM parameters from parent link
+                        try {
+                            let utmParams;
+                            if (newUrl.startsWith('#') && newUrl.includes('?')) {
+                                // Parse query string from anchor link
+                                const queryString = newUrl.substring(newUrl.indexOf('?'));
+                                const params = new URLSearchParams(queryString);
+                                utmParams = {
+                                    source: params.get('utm_source') || '',
+                                    medium: params.get('utm_medium') || '',
+                                    campaign: params.get('utm_campaign') || '',
+                                    content: params.get('utm_content') || '',
+                                    term: params.get('utm_term') || ''
+                                };
+                            } else {
+                                // Parse as normal URL
+                                const url = new URL(newUrl, 'http://dummy.com');
+                                utmParams = {
+                                    source: url.searchParams.get('utm_source') || '',
+                                    medium: url.searchParams.get('utm_medium') || '',
+                                    campaign: url.searchParams.get('utm_campaign') || '',
+                                    content: url.searchParams.get('utm_content') || '',
+                                    term: url.searchParams.get('utm_term') || ''
+                                };
+                            }
+                            state.images[imageIndex].parentLinkUtmParams = utmParams;
+                        } catch (err) {
+                            // Invalid URL - reset params
+                            state.images[imageIndex].parentLinkUtmParams = null;
+                        }
+                        
+                        // Update original value to reflect saved state
+                        input.dataset.originalValue = newUrl;
+                        
+                        // Hide apply button
+                        e.target.classList.add('hidden');
+                        
+                        // Re-validate and render
+                        validateAll();
+                        renderTables();
+                        renderWarnings();
+                    });
+                });
+
+                // Add event listeners for alt text editable fields
+                document.querySelectorAll('.alt-text-input').forEach(input => {
+                    // Show/hide apply button and update preview as user types
+                    input.addEventListener('input', (e) => {
+                        const imageIndex = parseInt(e.target.dataset.imageIndex);
+                        const originalValue = e.target.dataset.originalValue;
+                        const currentValue = e.target.value;
+                        const hasChanged = currentValue !== originalValue;
+                        
+                        // Show/hide apply button
+                        const applyBtn = e.target.parentElement.querySelector('.btn-apply');
+                        if (hasChanged) {
+                            applyBtn.classList.remove('hidden');
+                        } else {
+                            applyBtn.classList.add('hidden');
+                        }
+                        
+                        // Update utm_content preview in real-time (only for images with parent links that originally had utm_content)
+                        if (state.images[imageIndex].parentLinkUtmParams && state.images[imageIndex].hasOriginalUtmContent) {
+                            const utmPreview = document.querySelector(`.utm-auto[data-image-index="${imageIndex}"]`);
+                            const sanitized = sanitizeForUTM(currentValue);
+                            if (utmPreview) {
+                                utmPreview.textContent = sanitized || '(empty)';
+                            }
+                        }
+                    });
+                    
+                    // Apply on Enter key
+                    input.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            const applyBtn = e.target.parentElement.querySelector('.btn-apply');
+                            if (!applyBtn.classList.contains('hidden')) {
+                                applyBtn.click();
+                            }
+                        }
+                    });
+                });
+                
+                // Add event listeners for apply buttons
+                document.querySelectorAll('.btn-apply').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const imageIndex = parseInt(e.target.dataset.imageIndex);
+                        const input = document.querySelector(`.alt-text-input[data-image-index="${imageIndex}"]`);
+                        const newAltText = input.value;
+                        
+                        // Update state
+                        state.images[imageIndex].alt = newAltText;
+                        
+                        // Re-validate and render
+                        validateAll();
+                        renderTables();
+                        renderWarnings();
+                    });
+                });
+
+                // Add click handlers for image thumbnails
+                document.querySelectorAll('.img-thumbnail[data-image-index]').forEach(thumbnail => {
+                    thumbnail.addEventListener('click', (e) => {
+                        const imageIndex = parseInt(e.target.dataset.imageIndex);
+                        openImageModal(imageIndex);
+                    });
+                });
+            }
+        }
+
+        // Open image modal
+        function openImageModal(imageIndex) {
+            const img = state.images[imageIndex];
+            elements.modalImage.src = img.src;
+            elements.modalImage.alt = img.alt || 'Preview';
+            elements.modalAltInput.value = img.alt;
+            elements.modalAltInput.dataset.imageIndex = imageIndex;
+            elements.modalAltInput.dataset.originalValue = img.alt;
+            
+            // Show/hide UTM preview based on whether image has parent link that originally had utm_content
+            if (img.parentLinkUtmParams && img.hasOriginalUtmContent) {
+                elements.modalUtmPreviewGroup.style.display = 'block';
+                const sanitized = sanitizeForUTM(img.alt);
+                elements.modalUtmPreview.textContent = sanitized || '(empty)';
+            } else {
+                elements.modalUtmPreviewGroup.style.display = 'none';
+            }
+            
+            // Update image count
+            elements.modalImageCount.textContent = `Image ${imageIndex + 1} of ${state.images.length}`;
+            
+            // Update navigation buttons
+            elements.modalPrevBtn.disabled = imageIndex === 0;
+            elements.modalNextBtn.disabled = imageIndex === state.images.length - 1;
+            
+            // Hide apply button initially (no changes yet)
+            elements.modalApplyBtn.classList.add('hidden');
+            
+            // Update link URL field
+            if (img.parentLinkHref) {
+                elements.modalLinkUrlGroup.style.display = 'block';
+                elements.modalLinkUrl.value = img.parentLinkHref;
+                elements.modalLinkUrl.dataset.imageIndex = imageIndex;
+                elements.modalLinkUrl.dataset.originalValue = img.parentLinkHref;
+                elements.modalApplyUrlBtn.classList.add('hidden');
+            } else {
+                elements.modalLinkUrlGroup.style.display = 'none';
+            }
+            
+            // Update issues display
+            updateModalIssuesDisplay(imageIndex);
+            
+            // Show modal
+            elements.imageModal.classList.add('show');
+        }
+
+        // Update modal issues display
+        function updateModalIssuesDisplay(imageIndex) {
+            const img = state.images[imageIndex];
+            const hasWarnings = img.validation.warnings.length > 0;
+            
+            if (hasWarnings) {
+                elements.modalIssues.className = 'modal-issues has-warnings';
+                
+                // Generate issues with Fix buttons
+                const issuesHtml = img.validation.warnings.map(warning => {
+                    // Check if this is a fixable mismatch
+                    const mismatchMatch = warning.match(/(utm_source|utm_medium|utm_campaign|Parent link utm_source|Parent link utm_medium|Parent link utm_campaign) mismatch \(expected: ([^)]+)\)/);
+                    
+                    if (mismatchMatch) {
+                        const paramType = mismatchMatch[1];
+                        const expectedValue = mismatchMatch[2];
+                        const isParentLink = paramType.startsWith('Parent link');
+                        // Extract param name and strip 'utm_' prefix for state object keys
+                        const fullParamName = isParentLink ? paramType.replace('Parent link ', '') : paramType;
+                        const utmParam = fullParamName.replace('utm_', ''); // Remove utm_ prefix -> 'source', 'medium', 'campaign'
+                        
+                        return `<li style="display: flex; align-items: center; gap: 8px;">
+                            <span>${escapeHtml(warning)}</span>
+                            <button type="button" class="btn-fix modal-fix-btn" 
+                                    data-image-index="${imageIndex}" 
+                                    data-is-parent-link="${isParentLink}"
+                                    data-utm-param="${utmParam}"
+                                    data-expected-value="${escapeHtml(expectedValue)}">Fix</button>
+                        </li>`;
+                    } else {
+                        return `<li>${escapeHtml(warning)}</li>`;
+                    }
+                }).join('');
+                
+                elements.modalIssues.innerHTML = `
+                    <strong>⚠️ Issues Found</strong>
+                    <ul class="modal-issues-list">
+                        ${issuesHtml}
+                    </ul>
+                `;
+                
+                // Add event listeners for modal fix buttons
+                document.querySelectorAll('.modal-fix-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const imageIndex = parseInt(e.target.dataset.imageIndex);
+                        const isParentLink = e.target.dataset.isParentLink === 'true';
+                        const utmParam = e.target.dataset.utmParam;
+                        const expectedValue = e.target.dataset.expectedValue;
+                        
+                        // Fix the mismatch
+                        fixUtmMismatch(imageIndex, 'image', isParentLink, utmParam, expectedValue);
+                        
+                        // Update modal display
+                        updateModalIssuesDisplay(imageIndex);
+                    });
+                });
+            } else {
+                elements.modalIssues.className = 'modal-issues valid';
+                elements.modalIssues.innerHTML = '<strong>✓ No issues - all validations passed</strong>';
+            }
+        }
+
+        // Navigate between images
+        function navigateImage(direction) {
+            const currentIndex = parseInt(elements.modalAltInput.dataset.imageIndex);
+            let newIndex;
+            
+            if (direction === 'prev') {
+                newIndex = Math.max(0, currentIndex - 1);
+            } else {
+                newIndex = Math.min(state.images.length - 1, currentIndex + 1);
+            }
+            
+            if (newIndex !== currentIndex) {
+                openImageModal(newIndex);
+            }
+        }
+
+        // Close image modal
+        function closeImageModal() {
+            elements.imageModal.classList.remove('show');
+        }
+
+        // Apply alt text from modal
+        function applyModalAltText() {
+            const imageIndex = parseInt(elements.modalAltInput.dataset.imageIndex);
+            const newAltText = elements.modalAltInput.value;
+            
+            // Update state
+            state.images[imageIndex].alt = newAltText;
+
+            // If image has a parent link, update its URL to reflect alt->utm_content change
+            const img = state.images[imageIndex];
+            if (img.parentLinkHref && img.parentLinkUtmParams) {
+                const sanitizedAlt = sanitizeForUTM(newAltText);
+
+                // Keep tracked parent utm_content in sync when it originally existed
+                if (img.hasOriginalUtmContent) {
+                    img.parentLinkUtmParams.content = sanitizedAlt;
+                }
+
+                try {
+                    let newHref;
+
+                    if (img.parentLinkHref.startsWith('#') && img.parentLinkHref.includes('?')) {
+                        const hashPart = img.parentLinkHref.substring(0, img.parentLinkHref.indexOf('?'));
+                        const queryString = img.parentLinkHref.substring(img.parentLinkHref.indexOf('?'));
+                        const params = new URLSearchParams(queryString);
+
+                        if (img.parentLinkUtmParams.source) params.set('utm_source', img.parentLinkUtmParams.source);
+                        if (img.parentLinkUtmParams.medium) params.set('utm_medium', img.parentLinkUtmParams.medium);
+                        if (img.parentLinkUtmParams.campaign) params.set('utm_campaign', img.parentLinkUtmParams.campaign);
+                        if (img.hasOriginalUtmContent && sanitizedAlt) {
+                            params.set('utm_content', sanitizedAlt);
+                        }
+
+                        newHref = hashPart + '?' + params.toString();
+                    } else {
+                        const url = new URL(img.parentLinkHref, 'http://dummy.com');
+
+                        if (img.parentLinkUtmParams.source) url.searchParams.set('utm_source', img.parentLinkUtmParams.source);
+                        if (img.parentLinkUtmParams.medium) url.searchParams.set('utm_medium', img.parentLinkUtmParams.medium);
+                        if (img.parentLinkUtmParams.campaign) url.searchParams.set('utm_campaign', img.parentLinkUtmParams.campaign);
+                        if (img.hasOriginalUtmContent && sanitizedAlt) {
+                            url.searchParams.set('utm_content', sanitizedAlt);
+                        }
+
+                        newHref = img.parentLinkHref.startsWith('http')
+                            ? url.toString()
+                            : url.pathname + url.search + url.hash;
+                    }
+
+                    img.parentLinkHref = newHref;
+
+                    // Keep modal URL input immediately in sync
+                    if (elements.modalLinkUrlGroup.style.display !== 'none') {
+                        elements.modalLinkUrl.value = newHref;
+                        elements.modalLinkUrl.dataset.originalValue = newHref;
+                        elements.modalApplyUrlBtn.classList.add('hidden');
+                    }
+                } catch (err) {
+                    console.warn('Could not update parent link URL from modal alt apply:', err);
+                }
+            }
+            
+            // Re-validate and render
+            validateAll();
+            renderTables();
+            renderWarnings();
+            
+            // Update original value to reflect saved state
+            elements.modalAltInput.dataset.originalValue = newAltText;
+            
+            // Hide apply button
+            elements.modalApplyBtn.classList.add('hidden');
+            
+            // Update modal issues display
+            updateModalIssuesDisplay(imageIndex);
+            
+            // Keep modal open (do not close)
+        }
+
+        // Update canonical values and apply to all links
+        function updateCanonicalValues(newSource, newMedium, newCampaign) {
+            // Update canonical state
+            state.canonical.source = newSource;
+            state.canonical.medium = newMedium;
+            state.canonical.campaign = newCampaign;
+            
+            // Update all text links
+            state.links.forEach(link => {
+                if (link.utmParams) {
+                    link.utmParams.source = newSource;
+                    link.utmParams.medium = newMedium;
+                    link.utmParams.campaign = newCampaign;
+                }
+            });
+            
+            // Update all image parent links
+            state.images.forEach(img => {
+                if (img.parentLinkUtmParams) {
+                    img.parentLinkUtmParams.source = newSource;
+                    img.parentLinkUtmParams.medium = newMedium;
+                    img.parentLinkUtmParams.campaign = newCampaign;
+                }
+            });
+            
+            // Re-validate and render
+            validateAll();
+            renderTables();
+            renderWarnings();
+        }
+
+        // Render warnings summary
+        function renderWarnings() {
+            // Render canonical values
+            if (state.canonical.source || state.canonical.medium || state.canonical.campaign) {
+                elements.canonicalValues.innerHTML = `
+                    <h3>✓ Expected UTM Parameters</h3>
+                    <div class="param">
+                        <label>utm_source:</label>
+                        <input type="text" id="canonicalSource" value="${escapeHtml(state.canonical.source)}" placeholder="e.g., newsletter">
+                    </div>
+                    <div class="param">
+                        <label>utm_medium:</label>
+                        <input type="text" id="canonicalMedium" value="${escapeHtml(state.canonical.medium)}" placeholder="e.g., email">
+                    </div>
+                    <div class="param">
+                        <label>utm_campaign:</label>
+                        <input type="text" id="canonicalCampaign" value="${escapeHtml(state.canonical.campaign)}" placeholder="e.g., spring2024">
+                    </div>
+                    <button type="button" class="canonical-update-btn hidden" id="canonicalUpdateBtn">Update All Links</button>
+                `;
+                
+                // Add event listeners for canonical value inputs
+                const sourceInput = document.getElementById('canonicalSource');
+                const mediumInput = document.getElementById('canonicalMedium');
+                const campaignInput = document.getElementById('canonicalCampaign');
+                const updateBtn = document.getElementById('canonicalUpdateBtn');
+                
+                const checkChanges = () => {
+                    const hasChanged = 
+                        sourceInput.value !== state.canonical.source ||
+                        mediumInput.value !== state.canonical.medium ||
+                        campaignInput.value !== state.canonical.campaign;
+                    
+                    if (hasChanged) {
+                        updateBtn.classList.remove('hidden');
+                    } else {
+                        updateBtn.classList.add('hidden');
+                    }
+                };
+                
+                sourceInput.addEventListener('input', checkChanges);
+                mediumInput.addEventListener('input', checkChanges);
+                campaignInput.addEventListener('input', checkChanges);
+                
+                updateBtn.addEventListener('click', () => {
+                    updateCanonicalValues(
+                        sourceInput.value,
+                        mediumInput.value,
+                        campaignInput.value
+                    );
+                });
+            } else {
+                elements.canonicalValues.innerHTML = `
+                    <h3>⚠️ No Canonical UTM Parameters Found</h3>
+                    <p style="font-size: 13px; margin-top: 4px;">No links with complete UTM parameters (source, medium, campaign) were found.</p>
+                `;
+            }
+
+            // Count issues by type
+            let missingParams = 0;
+            let mismatchedParams = 0;
+            let duplicates = 0;
+            let missingAlt = 0;
+            let totalLinkIssues = 0;
+            let totalImageIssues = 0;
+
+            state.links.forEach((link) => {
+                if (link.validation.warnings.length > 0) {
+                    totalLinkIssues++;
+                }
+                link.validation.warnings.forEach(warning => {
+                    if (warning.includes('Missing')) missingParams++;
+                    if (warning.includes('mismatch')) mismatchedParams++;
+                    if (warning.includes('Duplicate')) duplicates++;
+                });
+            });
+
+            state.images.forEach((img) => {
+                if (img.validation.warnings.length > 0) {
+                    totalImageIssues++;
+                }
+                img.validation.warnings.forEach(warning => {
+                    if (warning.includes('Missing alt')) missingAlt++;
+                    if (warning.includes('Duplicate')) duplicates++;
+                });
+            });
+
+            // Render warnings list with counts only
+            const totalIssues = totalLinkIssues + totalImageIssues;
+            
+            if (totalIssues === 0) {
+                elements.warningsList.innerHTML = `
+                    <div class="warning-item success">
+                        <span class="warning-icon">✓</span>
+                        <span>All links and images are valid! No issues found.</span>
+                    </div>
+                `;
+            } else {
+                const summary = [];
+                if (mismatchedParams > 0) summary.push(`${mismatchedParams} mismatched parameter(s)`);
+                if (missingParams > 0) summary.push(`${missingParams} missing parameter(s)`);
+                if (duplicates > 0) summary.push(`${duplicates} duplicate(s)`);
+                if (missingAlt > 0) summary.push(`${missingAlt} missing alt text`);
+
+                let detailsHTML = '';
+                if (totalLinkIssues > 0) {
+                    detailsHTML += `
+                        <div class="warning-item warning">
+                            <span class="warning-icon">🔗</span>
+                            <span><strong>${totalLinkIssues}</strong> text link(s) with issues - see details in table below</span>
+                        </div>
+                    `;
+                }
+                if (totalImageIssues > 0) {
+                    detailsHTML += `
+                        <div class="warning-item warning">
+                            <span class="warning-icon">🖼️</span>
+                            <span><strong>${totalImageIssues}</strong> image(s) with issues - see details in table below</span>
+                        </div>
+                    `;
+                }
+
+                elements.warningsList.innerHTML = `
+                    <div class="warning-item ${duplicates > 0 ? 'error' : 'warning'}">
+                        <span class="warning-icon">${duplicates > 0 ? '⚠️' : 'ℹ️'}</span>
+                        <span><strong>Total Issues:</strong> ${summary.join(', ')}</span>
+                    </div>
+                    ${detailsHTML}
+                `;
+            }
+        }
+
+        // Export HTML with modifications
+        function exportHTML() {
+            try {
+                // Clone the parsed document
+                const doc = state.parsedDoc.cloneNode(true);
+
+                // Update all links with modified UTM parameters
+                state.links.forEach(link => {
+                    const linkEl = doc.querySelectorAll('a[href]')[link.index];
+                    
+                    // Handle anchor links (starting with #)
+                    if (link.href.startsWith('#') && link.href.includes('?')) {
+                        // Parse and update query string in anchor link
+                        const hashPart = link.href.substring(0, link.href.indexOf('?'));
+                        const queryString = link.href.substring(link.href.indexOf('?'));
+                        const params = new URLSearchParams(queryString);
+                        
+                        // Update all UTM parameters
+                        if (link.utmParams.source) params.set('utm_source', link.utmParams.source);
+                        if (link.utmParams.medium) params.set('utm_medium', link.utmParams.medium);
+                        if (link.utmParams.campaign) params.set('utm_campaign', link.utmParams.campaign);
+                        if (link.utmParams.content) params.set('utm_content', link.utmParams.content);
+                        
+                        const newHref = hashPart + '?' + params.toString();
+                        linkEl.setAttribute('href', newHref);
+                    } else if (link.url) {
+                        // Handle regular URLs
+                        const url = new URL(link.href, 'http://dummy.com');
+                        
+                        // Update all UTM parameters
+                        if (link.utmParams.source) url.searchParams.set('utm_source', link.utmParams.source);
+                        if (link.utmParams.medium) url.searchParams.set('utm_medium', link.utmParams.medium);
+                        if (link.utmParams.campaign) url.searchParams.set('utm_campaign', link.utmParams.campaign);
+                        if (link.utmParams.content) url.searchParams.set('utm_content', link.utmParams.content);
+                        
+                        // Update href
+                        let newHref = url.toString();
+                        if (!link.href.startsWith('http')) {
+                            // Preserve relative URLs
+                            newHref = url.pathname + url.search + url.hash;
+                        }
+                        linkEl.setAttribute('href', newHref);
+                    }
+                });
+
+                // Update all images with modified alt text
+                state.images.forEach(img => {
+                    const imgEl = doc.querySelectorAll('img')[img.index];
+                    imgEl.setAttribute('alt', img.alt);
+
+                    // If image is in a link, update the link's UTM parameters
+                    if (img.parentLink && img.parentLinkUtmParams && img.parentLinkHref) {
+                        // Use the updated href from state (may have been edited)
+                        const parentUrl = img.parentLinkHref;
+                        const originalParentUrl = img.parentLink.getAttribute('href');
+                        const sanitizedAlt = sanitizeForUTM(img.alt);
+                        
+                        try {
+                            let newHref;
+                            
+                            // Handle anchor links
+                            if (parentUrl.startsWith('#') && parentUrl.includes('?')) {
+                                const hashPart = parentUrl.substring(0, parentUrl.indexOf('?'));
+                                const queryString = parentUrl.substring(parentUrl.indexOf('?'));
+                                const params = new URLSearchParams(queryString);
+                                
+                                // Update all UTM parameters
+                                if (img.parentLinkUtmParams.source) params.set('utm_source', img.parentLinkUtmParams.source);
+                                if (img.parentLinkUtmParams.medium) params.set('utm_medium', img.parentLinkUtmParams.medium);
+                                if (img.parentLinkUtmParams.campaign) params.set('utm_campaign', img.parentLinkUtmParams.campaign);
+                                // Only set utm_content if it was originally present
+                                if (img.hasOriginalUtmContent && sanitizedAlt) params.set('utm_content', sanitizedAlt);
+                                
+                                newHref = hashPart + '?' + params.toString();
+                            } else {
+                                // Handle regular URLs
+                                const url = new URL(parentUrl, 'http://dummy.com');
+                                
+                                // Update all UTM parameters
+                                if (img.parentLinkUtmParams.source) url.searchParams.set('utm_source', img.parentLinkUtmParams.source);
+                                if (img.parentLinkUtmParams.medium) url.searchParams.set('utm_medium', img.parentLinkUtmParams.medium);
+                                if (img.parentLinkUtmParams.campaign) url.searchParams.set('utm_campaign', img.parentLinkUtmParams.campaign);
+                                // Only set utm_content if it was originally present
+                                if (img.hasOriginalUtmContent && sanitizedAlt) url.searchParams.set('utm_content', sanitizedAlt);
+                                
+                                newHref = url.toString();
+                                if (!parentUrl.startsWith('http')) {
+                                    newHref = url.pathname + url.search + url.hash;
+                                }
+                            }
+                            
+                            // Find the parent link in the cloned doc (using original href from parsed doc)
+                            const links = Array.from(doc.querySelectorAll('a[href]'));
+                            const matchingLink = links.find(l => l.getAttribute('href') === originalParentUrl && l.querySelector('img'));
+                            if (matchingLink) {
+                                matchingLink.setAttribute('href', newHref);
+                            }
+                        } catch (e) {
+                            console.warn('Could not update image link UTM:', e);
+                        }
+                    }
+                });
+
+                // Serialize the document using HTML serialization (preserves original formatting)
+                let htmlString = doc.documentElement.outerHTML;
+                
+                // Replace &amp; with & in URLs (we want raw & in URLs)
+                htmlString = htmlString.replace(/&amp;/g, '&');
+
+                // Create download
+                const blob = new Blob([htmlString], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = state.fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                // Show success message
+                alert('HTML exported successfully!');
+            } catch (error) {
+                console.error('Error exporting HTML:', error);
+                alert('Error exporting HTML. Please check the console for details.');
+            }
+        }
+
+        // Clear app state
+        function clearApp() {
+            state.originalHTML = null;
+            state.parsedDoc = null;
+            state.links = [];
+            state.images = [];
+            state.fileName = '';
+            state.fileSize = 0;
+
+            elements.fileInput.value = '';
+            elements.fileInfo.classList.remove('show');
+            elements.dropZone.classList.remove('has-file');
+            elements.resultsSection.classList.remove('show');
+            elements.loading.classList.remove('show');
+        }
+
+        // Utility functions
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Generate issues display with Fix buttons for mismatches
+        function generateIssuesDisplay(warnings, itemIndex, itemType = 'link') {
+            if (warnings.length === 0) {
+                return '<div class="issues-list valid">✓ Valid</div>';
+            }
+
+            const issuesHtml = warnings.map(warning => {
+                // Check if this is a fixable mismatch
+                const mismatchMatch = warning.match(/(utm_source|utm_medium|utm_campaign|utm_content|Parent link utm_source|Parent link utm_medium|Parent link utm_campaign|Parent link utm_content) mismatch \(expected: ([^)]+)\)/);
+                const invalidCharsMatch = warning.match(/(utm_source|utm_medium|utm_campaign|utm_content|Parent link utm_source|Parent link utm_medium|Parent link utm_campaign|Parent link utm_content) has invalid characters \(suggested: ([^)]+)\)/);
+                
+                if (mismatchMatch) {
+                    const paramType = mismatchMatch[1];
+                    const expectedValue = mismatchMatch[2];
+                    const isParentLink = paramType.startsWith('Parent link');
+                    // Extract param name and strip 'utm_' prefix for state object keys
+                    const fullParamName = isParentLink ? paramType.replace('Parent link ', '') : paramType;
+                    const utmParam = fullParamName.replace('utm_', ''); // Remove utm_ prefix -> 'source', 'medium', 'campaign', 'content'
+                    
+                    return `<div class="issue-item">
+                        <span>• ${escapeHtml(warning)}</span>
+                        <button type="button" class="btn-fix" 
+                                data-item-index="${itemIndex}" 
+                                data-item-type="${itemType}"
+                                data-is-parent-link="${isParentLink}"
+                                data-utm-param="${utmParam}"
+                                data-expected-value="${escapeHtml(expectedValue)}">Fix</button>
+                    </div>`;
+                } else if (invalidCharsMatch) {
+                    const paramType = invalidCharsMatch[1];
+                    const suggestedValue = invalidCharsMatch[2];
+                    const isParentLink = paramType.startsWith('Parent link');
+                    const fullParamName = isParentLink ? paramType.replace('Parent link ', '') : paramType;
+                    const utmParam = fullParamName.replace('utm_', '');
+                    
+                    return `<div class="issue-item">
+                        <span>• ${escapeHtml(warning)}</span>
+                        <button type="button" class="btn-fix" 
+                                data-item-index="${itemIndex}" 
+                                data-item-type="${itemType}"
+                                data-is-parent-link="${isParentLink}"
+                                data-utm-param="${utmParam}"
+                                data-expected-value="${escapeHtml(suggestedValue)}">Fix</button>
+                    </div>`;
+                } else {
+                    return `<div>• ${escapeHtml(warning)}</div>`;
+                }
+            }).join('');
+
+            return `<div class="issues-list">${issuesHtml}</div>`;
+        }
+
+        // Fix a UTM parameter mismatch
+        function fixUtmMismatch(itemIndex, itemType, isParentLink, utmParam, expectedValue) {
+            if (itemType === 'link') {
+                // Fix a text link
+                state.links[itemIndex].utmParams[utmParam] = expectedValue;
+                
+                // Rebuild the URL with updated parameter
+                const link = state.links[itemIndex];
+                try {
+                    if (link.href.startsWith('#') && link.href.includes('?')) {
+                        const hashPart = link.href.substring(0, link.href.indexOf('?'));
+                        const params = new URLSearchParams(link.href.substring(link.href.indexOf('?')));
+                        params.set(`utm_${utmParam}`, expectedValue);
+                        link.href = hashPart + '?' + params.toString();
+                    } else {
+                        const url = new URL(link.href, 'http://dummy.com');
+                        url.searchParams.set(`utm_${utmParam}`, expectedValue);
+                        
+                        // Preserve relative vs absolute URL format
+                        if (!link.href.startsWith('http')) {
+                            link.href = url.pathname + url.search + url.hash;
+                        } else {
+                            link.href = url.toString();
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Could not update link URL:', e);
+                }
+            } else if (itemType === 'image') {
+                // Fix an image's parent link
+                if (isParentLink && state.images[itemIndex].parentLinkUtmParams) {
+                    state.images[itemIndex].parentLinkUtmParams[utmParam] = expectedValue;
+                    
+                    // Rebuild the parent link URL with updated parameter
+                    const img = state.images[itemIndex];
+                    if (img.parentLinkHref) {
+                        try {
+                            if (img.parentLinkHref.startsWith('#') && img.parentLinkHref.includes('?')) {
+                                const hashPart = img.parentLinkHref.substring(0, img.parentLinkHref.indexOf('?'));
+                                const params = new URLSearchParams(img.parentLinkHref.substring(img.parentLinkHref.indexOf('?')));
+                                params.set(`utm_${utmParam}`, expectedValue);
+                                img.parentLinkHref = hashPart + '?' + params.toString();
+                            } else {
+                                const url = new URL(img.parentLinkHref, 'http://dummy.com');
+                                url.searchParams.set(`utm_${utmParam}`, expectedValue);
+                                
+                                // Preserve relative vs absolute URL format
+                                if (!img.parentLinkHref.startsWith('http')) {
+                                    img.parentLinkHref = url.pathname + url.search + url.hash;
+                                } else {
+                                    img.parentLinkHref = url.toString();
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('Could not update parent link URL:', e);
+                        }
+                    }
+
+                    // If modal is open for this image, keep URL textbox in sync immediately
+                    const isModalOpen = elements.imageModal.classList.contains('show');
+                    const modalImageIndex = parseInt(elements.modalAltInput.dataset.imageIndex);
+                    if (isModalOpen && modalImageIndex === itemIndex && elements.modalLinkUrlGroup.style.display !== 'none') {
+                        elements.modalLinkUrl.value = state.images[itemIndex].parentLinkHref || '';
+                        elements.modalLinkUrl.dataset.originalValue = state.images[itemIndex].parentLinkHref || '';
+                        elements.modalApplyUrlBtn.classList.add('hidden');
+                    }
+                }
+            }
+
+            // Re-validate and render
+            validateAll();
+            renderTables();
+            renderWarnings();
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
