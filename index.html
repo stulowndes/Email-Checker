@@ -1774,6 +1774,16 @@
 
         // Render tables
         function renderTables() {
+            // Helper function to check if a text link should be excluded
+            const isExcludedTextLink = (linkText) => {
+                const excludedTexts = [
+                    'customerservice.aldi.co.uk/contact',
+                    'help.aldi.co.uk',
+                    'unsubscribe'
+                ];
+                return excludedTexts.some(excluded => linkText.toLowerCase().includes(excluded.toLowerCase()));
+            };
+
             // Update counts
             elements.linksCount.textContent = state.links.length;
             elements.imagesCount.textContent = state.images.length;
@@ -1791,6 +1801,19 @@
             } else {
                 elements.linksTableBody.innerHTML = state.links.map((link, idx) => {
                     const issuesDisplay = generateIssuesDisplay(link.validation.warnings, idx, 'link');
+                    const isExcluded = isExcludedTextLink(link.text);
+                    
+                    // Conditionally render utm_content field
+                    const utmContentCell = isExcluded 
+                        ? '<span style="color: #94a3b8; font-style: italic;">N/A</span>'
+                        : `<div class="url-edit-cell">
+                               <input type="text" 
+                                      value="${escapeHtml(link.utmParams.content)}" 
+                                      data-link-index="${idx}"
+                                      data-original-value="${escapeHtml(link.utmParams.content)}"
+                                      class="utm-content-input">
+                               <button type="button" class="btn-apply hidden" data-link-index="${idx}" data-field="utm-content">Apply</button>
+                           </div>`;
 
                     return `
                         <tr class="row-main">
@@ -1800,14 +1823,7 @@
                             <td>${escapeHtml(link.utmParams.medium)}</td>
                             <td>${escapeHtml(link.utmParams.campaign)}</td>
                             <td class="editable-cell">
-                                <div class="url-edit-cell">
-                                    <input type="text" 
-                                           value="${escapeHtml(link.utmParams.content)}" 
-                                           data-link-index="${idx}"
-                                           data-original-value="${escapeHtml(link.utmParams.content)}"
-                                           class="utm-content-input">
-                                    <button type="button" class="btn-apply hidden" data-link-index="${idx}" data-field="utm-content">Apply</button>
-                                </div>
+                                ${utmContentCell}
                             </td>
                             <td>${issuesDisplay}</td>
                         </tr>
