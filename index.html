@@ -1580,6 +1580,26 @@
 
         // Validate all links and images
         function validateAll() {
+            // Helper function to check if a text link should be excluded from validation
+            const isExcludedTextLink = (linkText) => {
+                const excludedTexts = [
+                    'customerservice.aldi.co.uk/contact',
+                    'help.aldi.co.uk',
+                    'unsubscribe'
+                ];
+                return excludedTexts.some(excluded => linkText.toLowerCase().includes(excluded.toLowerCase()));
+            };
+
+            // Helper function to check if an image link should be excluded from validation
+            const isExcludedImageLink = (href) => {
+                if (!href) return false;
+                const excludedUrls = [
+                    'https://apps.apple.com/gb/app/aldi-uk/id429398443',
+                    'https://play.google.com/store/apps/details?id=de.apptiv.business.android.aldi_uk&hl=en_GB'
+                ];
+                return excludedUrls.some(excluded => href.startsWith(excluded));
+            };
+
             // Find canonical UTM values (from first complete link)
             let canonical = {
                 source: '',
@@ -1588,6 +1608,9 @@
             };
 
             for (const link of state.links) {
+                // Skip excluded links when finding canonical values
+                if (isExcludedTextLink(link.text)) continue;
+                
                 if (link.utmParams.source && link.utmParams.medium && link.utmParams.campaign) {
                     canonical = {
                         source: link.utmParams.source,
@@ -1603,6 +1626,12 @@
             // Validate each link
             state.links.forEach(link => {
                 link.validation.warnings = [];
+                
+                // Skip validation for excluded links
+                if (isExcludedTextLink(link.text)) {
+                    link.validation.hasRequiredParams = true;
+                    return;
+                }
                 
                 // Check for missing required params
                 if (!link.utmParams.source) {
@@ -1649,6 +1678,9 @@
             // Check for duplicate utm_content
             const contentCounts = new Map();
             state.links.forEach(link => {
+                // Skip excluded links in duplicate detection
+                if (isExcludedTextLink(link.text)) return;
+                
                 if (link.utmParams.content) {
                     contentCounts.set(link.utmParams.content, (contentCounts.get(link.utmParams.content) || 0) + 1);
                 }
@@ -1657,6 +1689,9 @@
             // Check for duplicate alt text (only for images with parent links that have UTM parameters and originally had utm_content)
             const altCounts = new Map();
             state.images.forEach(img => {
+                // Skip excluded image links in duplicate detection
+                if (isExcludedImageLink(img.parentLinkHref)) return;
+                
                 if (img.alt && img.parentLinkUtmParams && img.hasOriginalUtmContent) {
                     const sanitized = sanitizeForUTM(img.alt);
                     altCounts.set(sanitized, (altCounts.get(sanitized) || 0) + 1);
@@ -1665,6 +1700,9 @@
 
             // Mark duplicates
             state.links.forEach(link => {
+                // Skip excluded links in marking duplicates
+                if (isExcludedTextLink(link.text)) return;
+                
                 if (link.utmParams.content && contentCounts.get(link.utmParams.content) > 1) {
                     link.validation.isDuplicate = true;
                     link.validation.warnings.push('Duplicate utm_content');
@@ -1673,6 +1711,11 @@
 
             state.images.forEach(img => {
                 img.validation.warnings = [];
+                
+                // Skip validation for excluded image links
+                if (isExcludedImageLink(img.parentLinkHref)) {
+                    return;
+                }
                 
                 // Only validate utm_content for images with parent links that originally had utm_content
                 if (img.parentLinkUtmParams && img.hasOriginalUtmContent) {
