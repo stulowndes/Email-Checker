@@ -2398,6 +2398,14 @@
                     link.utmParams.source = newSource;
                     link.utmParams.medium = newMedium;
                     link.utmParams.campaign = newCampaign;
+                    
+                    // Update the href with new UTM parameters
+                    const utmUpdates = {
+                        utm_source: newSource,
+                        utm_medium: newMedium,
+                        utm_campaign: newCampaign
+                    };
+                    link.href = updateHrefWithUTMParamsRaw(link.href, utmUpdates);
                 }
             });
             
@@ -2407,6 +2415,14 @@
                     img.parentLinkUtmParams.source = newSource;
                     img.parentLinkUtmParams.medium = newMedium;
                     img.parentLinkUtmParams.campaign = newCampaign;
+                    
+                    // Update the parent link href with new UTM parameters
+                    const utmUpdates = {
+                        utm_source: newSource,
+                        utm_medium: newMedium,
+                        utm_campaign: newCampaign
+                    };
+                    img.parentLinkHref = updateHrefWithUTMParamsRaw(img.parentLinkHref, utmUpdates);
                 }
             });
             
