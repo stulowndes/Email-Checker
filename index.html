@@ -2548,6 +2548,78 @@
             }
         }
 
+        // Update UTM parameters in href without URL encoding non-UTM params
+        function updateHrefWithUTMParamsRaw(href, utmUpdates) {
+            if (!href) return href;
+
+            const updateQuery = (queryString, updates) => {
+                const pairs = queryString ? queryString.split('&') : [];
+                const seenKeys = new Set();
+
+                const updatedPairs = pairs.map(pair => {
+                    if (!pair) return pair;
+
+                    const eqIndex = pair.indexOf('=');
+                    const key = eqIndex >= 0 ? pair.substring(0, eqIndex) : pair;
+                    const value = eqIndex >= 0 ? pair.substring(eqIndex + 1) : '';
+
+                    if (Object.prototype.hasOwnProperty.call(updates, key)) {
+                        seenKeys.add(key);
+                        const nextValue = updates[key];
+                        if (nextValue === null || nextValue === undefined || nextValue === '') {
+                            return pair;
+                        }
+                        return `${key}=${nextValue}`;
+                    }
+
+                    return eqIndex >= 0 ? `${key}=${value}` : key;
+                });
+
+                Object.entries(updates).forEach(([key, value]) => {
+                    if (!seenKeys.has(key) && value !== null && value !== undefined && value !== '') {
+                        updatedPairs.push(`${key}=${value}`);
+                    }
+                });
+
+                return updatedPairs.filter(Boolean).join('&');
+            };
+
+            if (href.startsWith('#') && href.includes('?')) {
+                const questionIndex = href.indexOf('?');
+                const hashPart = href.substring(0, questionIndex);
+                const queryString = href.substring(questionIndex + 1);
+                const newQuery = updateQuery(queryString, utmUpdates);
+                return newQuery ? `${hashPart}?${newQuery}` : hashPart;
+            }
+
+            const questionIndex = href.indexOf('?');
+            const hashIndex = href.indexOf('#');
+
+            if (questionIndex === -1) {
+                const additions = Object.entries(utmUpdates)
+                    .filter(([, value]) => value !== null && value !== undefined && value !== '')
+                    .map(([key, value]) => `${key}=${value}`)
+                    .join('&');
+
+                if (!additions) return href;
+
+                if (hashIndex !== -1) {
+                    const beforeHash = href.substring(0, hashIndex);
+                    const hash = href.substring(hashIndex);
+                    return `${beforeHash}?${additions}${hash}`;
+                }
+
+                return `${href}?${additions}`;
+            }
+
+            const path = href.substring(0, questionIndex);
+            const query = hashIndex !== -1 ? href.substring(questionIndex + 1, hashIndex) : href.substring(questionIndex + 1);
+            const hash = hashIndex !== -1 ? href.substring(hashIndex) : '';
+            const newQuery = updateQuery(query, utmUpdates);
+
+            return `${path}${newQuery ? `?${newQuery}` : ''}${hash}`;
+        }
+
         // Export HTML with modifications
         function exportHTML() {
             try {
@@ -2557,40 +2629,16 @@
                 // Update all links with modified UTM parameters
                 state.links.forEach(link => {
                     const linkEl = doc.querySelectorAll('a[href]')[link.index];
-                    
-                    // Handle anchor links (starting with #)
-                    if (link.href.startsWith('#') && link.href.includes('?')) {
-                        // Parse and update query string in anchor link
-                        const hashPart = link.href.substring(0, link.href.indexOf('?'));
-                        const queryString = link.href.substring(link.href.indexOf('?'));
-                        const params = new URLSearchParams(queryString);
-                        
-                        // Update all UTM parameters
-                        if (link.utmParams.source) params.set('utm_source', link.utmParams.source);
-                        if (link.utmParams.medium) params.set('utm_medium', link.utmParams.medium);
-                        if (link.utmParams.campaign) params.set('utm_campaign', link.utmParams.campaign);
-                        if (link.utmParams.content) params.set('utm_content', link.utmParams.content);
-                        
-                        const newHref = hashPart + '?' + params.toString();
-                        linkEl.setAttribute('href', newHref);
-                    } else if (link.url) {
-                        // Handle regular URLs
-                        const url = new URL(link.href, 'http://dummy.com');
-                        
-                        // Update all UTM parameters
-                        if (link.utmParams.source) url.searchParams.set('utm_source', link.utmParams.source);
-                        if (link.utmParams.medium) url.searchParams.set('utm_medium', link.utmParams.medium);
-                        if (link.utmParams.campaign) url.searchParams.set('utm_campaign', link.utmParams.campaign);
-                        if (link.utmParams.content) url.searchParams.set('utm_content', link.utmParams.content);
-                        
-                        // Update href
-                        let newHref = url.toString();
-                        if (!link.href.startsWith('http')) {
-                            // Preserve relative URLs
-                            newHref = url.pathname + url.search + url.hash;
-                        }
-                        linkEl.setAttribute('href', newHref);
-                    }
+
+                    const utmUpdates = {
+                        utm_source: link.utmParams.source,
+                        utm_medium: link.utmParams.medium,
+                        utm_campaign: link.utmParams.campaign,
+                        utm_content: link.utmParams.content
+                    };
+
+                    const newHref = updateHrefWithUTMParamsRaw(link.href, utmUpdates);
+                    linkEl.setAttribute('href', newHref);
                 });
 
                 // Update all images with modified alt text
@@ -2604,49 +2652,21 @@
                         const parentUrl = img.parentLinkHref;
                         const originalParentUrl = img.parentLink.getAttribute('href');
                         const sanitizedAlt = sanitizeForUTM(img.alt);
-                        
-                        try {
-                            let newHref;
-                            
-                            // Handle anchor links
-                            if (parentUrl.startsWith('#') && parentUrl.includes('?')) {
-                                const hashPart = parentUrl.substring(0, parentUrl.indexOf('?'));
-                                const queryString = parentUrl.substring(parentUrl.indexOf('?'));
-                                const params = new URLSearchParams(queryString);
-                                
-                                // Update all UTM parameters
-                                if (img.parentLinkUtmParams.source) params.set('utm_source', img.parentLinkUtmParams.source);
-                                if (img.parentLinkUtmParams.medium) params.set('utm_medium', img.parentLinkUtmParams.medium);
-                                if (img.parentLinkUtmParams.campaign) params.set('utm_campaign', img.parentLinkUtmParams.campaign);
-                                // Only set utm_content if it was originally present
-                                if (img.hasOriginalUtmContent && sanitizedAlt) params.set('utm_content', sanitizedAlt);
-                                
-                                newHref = hashPart + '?' + params.toString();
-                            } else {
-                                // Handle regular URLs
-                                const url = new URL(parentUrl, 'http://dummy.com');
-                                
-                                // Update all UTM parameters
-                                if (img.parentLinkUtmParams.source) url.searchParams.set('utm_source', img.parentLinkUtmParams.source);
-                                if (img.parentLinkUtmParams.medium) url.searchParams.set('utm_medium', img.parentLinkUtmParams.medium);
-                                if (img.parentLinkUtmParams.campaign) url.searchParams.set('utm_campaign', img.parentLinkUtmParams.campaign);
-                                // Only set utm_content if it was originally present
-                                if (img.hasOriginalUtmContent && sanitizedAlt) url.searchParams.set('utm_content', sanitizedAlt);
-                                
-                                newHref = url.toString();
-                                if (!parentUrl.startsWith('http')) {
-                                    newHref = url.pathname + url.search + url.hash;
-                                }
-                            }
-                            
-                            // Find the parent link in the cloned doc (using original href from parsed doc)
-                            const links = Array.from(doc.querySelectorAll('a[href]'));
-                            const matchingLink = links.find(l => l.getAttribute('href') === originalParentUrl && l.querySelector('img'));
-                            if (matchingLink) {
-                                matchingLink.setAttribute('href', newHref);
-                            }
-                        } catch (e) {
-                            console.warn('Could not update image link UTM:', e);
+
+                        const utmUpdates = {
+                            utm_source: img.parentLinkUtmParams.source,
+                            utm_medium: img.parentLinkUtmParams.medium,
+                            utm_campaign: img.parentLinkUtmParams.campaign,
+                            utm_content: img.hasOriginalUtmContent ? sanitizedAlt : null
+                        };
+
+                        const newHref = updateHrefWithUTMParamsRaw(parentUrl, utmUpdates);
+
+                        // Find the parent link in the cloned doc (using original href from parsed doc)
+                        const links = Array.from(doc.querySelectorAll('a[href]'));
+                        const matchingLink = links.find(l => l.getAttribute('href') === originalParentUrl && l.querySelector('img'));
+                        if (matchingLink) {
+                            matchingLink.setAttribute('href', newHref);
                         }
                     }
                 });
@@ -2656,6 +2676,14 @@
                 
                 // Replace &amp; with & in URLs (we want raw & in URLs)
                 htmlString = htmlString.replace(/&amp;/g, '&');
+
+                // Preserve template tokens like <%= ... %> in URLs/attributes
+                htmlString = htmlString
+                    .replace(/&lt;%/g, '<%')
+                    .replace(/%&gt;/g, '%>');
+
+                // Convert common typographic characters to named entities for email compatibility
+                htmlString = encodeEmailSafeEntities(htmlString);
 
                 // Create download
                 const blob = new Blob([htmlString], { type: 'text/html' });
@@ -2703,6 +2731,22 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function encodeEmailSafeEntities(html) {
+            return html
+                .replace(/’/g, '&rsquo;')
+                .replace(/‘/g, '&lsquo;')
+                .replace(/”/g, '&rdquo;')
+                .replace(/“/g, '&ldquo;')
+                .replace(/£/g, '&pound;')
+                .replace(/€/g, '&euro;')
+                .replace(/—/g, '&mdash;')
+                .replace(/–/g, '&ndash;')
+                .replace(/…/g, '&hellip;')
+                .replace(/©/g, '&copy;')
+                .replace(/®/g, '&reg;')
+                .replace(/™/g, '&trade;');
         }
 
         // Generate issues display with Fix buttons for mismatches
