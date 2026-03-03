@@ -1526,9 +1526,11 @@
         // Sanitize text for UTM content (kebab-case)
         function sanitizeForUTM(text) {
             return text
+                .normalize('NFD')                // Decompose accented characters
+                .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
                 .replace(/&/g, 'and')            // Replace & with 'and'
                 .replace(/\s+/g, '-')           // Replace spaces with hyphens
-                .replace(/[^a-zA-Z0-9-]/g, '')  // Remove special characters (preserve case)
+                .replace(/[^a-zA-Z0-9-_]/g, '')  // Remove special characters (preserve case, hyphens, underscores)
                 .replace(/-+/g, '-')             // Remove consecutive hyphens
                 .replace(/^-|-$/g, '');          // Remove leading/trailing hyphens
         }
@@ -1575,7 +1577,7 @@
 
         // Check if a value has invalid characters (spaces or special chars)
         function hasInvalidChars(text) {
-            return /[\s]/.test(text) || /[^a-zA-Z0-9-]/.test(text);
+            return /[\s]/.test(text) || /[^a-zA-Z0-9-_]/.test(text);
         }
 
         // Validate all links and images
@@ -2749,6 +2751,9 @@
                 // Serialize the document using HTML serialization (preserves original formatting)
                 let htmlString = doc.documentElement.outerHTML;
 
+                // Prepend DOCTYPE declaration
+                htmlString = '<!DOCTYPE html>\n' + htmlString;
+
                 // Convert common typographic characters to named entities for email compatibility
                 htmlString = encodeEmailSafeEntities(htmlString);
 
@@ -2805,6 +2810,8 @@
 
         function encodeEmailSafeEntities(html) {
             return html
+                .replace(/\u200C/g, '&zwnj;')  // Zero-width non-joiner
+                .replace(/\u200D/g, '&zwj;')   // Zero-width joiner
                 .replace(/‑/g, '&#8209;')
                 .replace(/’/g, '&rsquo;')
                 .replace(/‘/g, '&lsquo;')
