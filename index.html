@@ -2218,6 +2218,53 @@
                         // Update state
                         state.images[imageIndex].alt = newAltText;
                         
+                        // If image has a parent link, update its URL to reflect alt->utm_content change
+                        const img = state.images[imageIndex];
+                        if (img.parentLinkHref && img.parentLinkUtmParams) {
+                            const sanitizedAlt = sanitizeForUTM(newAltText);
+
+                            // Keep tracked parent utm_content in sync when it originally existed
+                            if (img.hasOriginalUtmContent) {
+                                img.parentLinkUtmParams.content = sanitizedAlt;
+                            }
+
+                            try {
+                                let newHref;
+
+                                if (img.parentLinkHref.startsWith('#') && img.parentLinkHref.includes('?')) {
+                                    const hashPart = img.parentLinkHref.substring(0, img.parentLinkHref.indexOf('?'));
+                                    const queryString = img.parentLinkHref.substring(img.parentLinkHref.indexOf('?'));
+                                    const params = new URLSearchParams(queryString);
+
+                                    if (img.parentLinkUtmParams.source) params.set('utm_source', img.parentLinkUtmParams.source);
+                                    if (img.parentLinkUtmParams.medium) params.set('utm_medium', img.parentLinkUtmParams.medium);
+                                    if (img.parentLinkUtmParams.campaign) params.set('utm_campaign', img.parentLinkUtmParams.campaign);
+                                    if (img.hasOriginalUtmContent && sanitizedAlt) {
+                                        params.set('utm_content', sanitizedAlt);
+                                    }
+
+                                    newHref = hashPart + '?' + params.toString();
+                                } else {
+                                    const url = new URL(img.parentLinkHref, 'http://dummy.com');
+
+                                    if (img.parentLinkUtmParams.source) url.searchParams.set('utm_source', img.parentLinkUtmParams.source);
+                                    if (img.parentLinkUtmParams.medium) url.searchParams.set('utm_medium', img.parentLinkUtmParams.medium);
+                                    if (img.parentLinkUtmParams.campaign) url.searchParams.set('utm_campaign', img.parentLinkUtmParams.campaign);
+                                    if (img.hasOriginalUtmContent && sanitizedAlt) {
+                                        url.searchParams.set('utm_content', sanitizedAlt);
+                                    }
+
+                                    newHref = img.parentLinkHref.startsWith('http')
+                                        ? url.toString()
+                                        : url.pathname + url.search + url.hash;
+                                }
+
+                                img.parentLinkHref = newHref;
+                            } catch (err) {
+                                console.warn('Could not update parent link URL from table alt apply:', err);
+                            }
+                        }
+                        
                         // Re-validate and render
                         validateAll();
                         renderTables();
@@ -2417,13 +2464,6 @@
                     }
 
                     img.parentLinkHref = newHref;
-
-                    // Keep modal URL input immediately in sync
-                    if (elements.modalLinkUrlGroup.style.display !== 'none') {
-                        elements.modalLinkUrl.value = newHref;
-                        elements.modalLinkUrl.dataset.originalValue = newHref;
-                        elements.modalApplyUrlBtn.classList.add('hidden');
-                    }
                 } catch (err) {
                     console.warn('Could not update parent link URL from modal alt apply:', err);
                 }
@@ -2433,6 +2473,13 @@
             validateAll();
             renderTables();
             renderWarnings();
+            
+            // Update modal Link URL field if visible (after state update and re-render)
+            if (img.parentLinkHref && elements.modalLinkUrlGroup.style.display !== 'none') {
+                elements.modalLinkUrl.value = img.parentLinkHref;
+                elements.modalLinkUrl.dataset.originalValue = img.parentLinkHref;
+                elements.modalApplyUrlBtn.classList.add('hidden');
+            }
             
             // Update original value to reflect saved state
             elements.modalAltInput.dataset.originalValue = newAltText;
