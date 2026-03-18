@@ -1208,8 +1208,8 @@
             elements.modalAltInput.addEventListener('input', (e) => {
                 const imageIndex = parseInt(e.target.dataset.imageIndex);
                 
-                // Update utm_content preview (only for images with parent links that originally had utm_content)
-                if (state.images[imageIndex] && state.images[imageIndex].parentLinkUtmParams && state.images[imageIndex].hasOriginalUtmContent) {
+                // Update utm_content preview (only for images with parent links that originally had utm_content AND not manually edited)
+                if (state.images[imageIndex] && state.images[imageIndex].parentLinkUtmParams && state.images[imageIndex].hasOriginalUtmContent && !state.images[imageIndex].utmContentManuallyEdited) {
                     const sanitized = sanitizeForUTM(e.target.value);
                     elements.modalUtmPreview.textContent = sanitized || '(empty)';
                 }
@@ -1254,6 +1254,9 @@
                 const imageIndex = parseInt(elements.modalAltInput.dataset.imageIndex);
                 const newUrl = elements.modalLinkUrl.value;
                 
+                // Store original utm_content to detect if it changed
+                const originalUtmContent = state.images[imageIndex].parentLinkUtmParams ? state.images[imageIndex].parentLinkUtmParams.content : '';
+                
                 // Update parent link href
                 state.images[imageIndex].parentLinkHref = newUrl;
                 
@@ -1281,6 +1284,11 @@
                         };
                     }
                     state.images[imageIndex].parentLinkUtmParams = utmParams;
+                    
+                    // If utm_content changed from the URL edit, mark it as manually edited
+                    if (utmParams.content !== originalUtmContent) {
+                        state.images[imageIndex].utmContentManuallyEdited = true;
+                    }
                 } catch (err) {
                     state.images[imageIndex].parentLinkUtmParams = null;
                 }
@@ -1615,6 +1623,7 @@
                     parentLinkHref,
                     parentLinkUtmParams,
                     hasOriginalUtmContent: parentLinkUtmParams && parentLinkUtmParams.content !== '', // Track if original link had utm_content
+                    utmContentManuallyEdited: false, // Track if user manually edited utm_content via URL
                     validation: {
                         hasAlt: alt !== '',
                         isDuplicate: false,
@@ -2189,6 +2198,9 @@
                         const input = e.target.parentElement.querySelector('.image-url-input');
                         const newUrl = input.value;
                         
+                        // Store original utm_content to detect if it changed
+                        const originalUtmContent = state.images[imageIndex].parentLinkUtmParams ? state.images[imageIndex].parentLinkUtmParams.content : '';
+                        
                         // Update parent link href
                         state.images[imageIndex].parentLinkHref = newUrl;
                         
@@ -2218,6 +2230,11 @@
                                 };
                             }
                             state.images[imageIndex].parentLinkUtmParams = utmParams;
+                            
+                            // If utm_content changed from the URL edit, mark it as manually edited
+                            if (utmParams.content !== originalUtmContent) {
+                                state.images[imageIndex].utmContentManuallyEdited = true;
+                            }
                             
                             // Update utm_content display in real-time if manually edited in URL
                             const utmDisplay = document.querySelector(`.utm-auto[data-image-index="${imageIndex}"]`);
@@ -2259,8 +2276,8 @@
                             applyBtn.classList.add('hidden');
                         }
                         
-                        // Update utm_content preview in real-time (only for images with parent links that originally had utm_content)
-                        if (state.images[imageIndex].parentLinkUtmParams && state.images[imageIndex].hasOriginalUtmContent) {
+                        // Update utm_content preview in real-time (only for images with parent links that originally had utm_content AND not manually edited)
+                        if (state.images[imageIndex].parentLinkUtmParams && state.images[imageIndex].hasOriginalUtmContent && !state.images[imageIndex].utmContentManuallyEdited) {
                             const utmPreview = document.querySelector(`.utm-auto[data-image-index="${imageIndex}"]`);
                             const sanitized = sanitizeForUTM(currentValue);
                             if (utmPreview) {
@@ -2291,8 +2308,9 @@
                         state.images[imageIndex].alt = newAltText;
                         
                         // If image has a parent link, update its URL to reflect alt->utm_content change
+                        // BUT only if utm_content wasn't manually edited via URL
                         const img = state.images[imageIndex];
-                        if (img.parentLinkHref && img.parentLinkUtmParams) {
+                        if (img.parentLinkHref && img.parentLinkUtmParams && !img.utmContentManuallyEdited) {
                             const sanitizedAlt = sanitizeForUTM(newAltText);
 
                             // Keep tracked parent utm_content in sync when it originally existed
@@ -2364,7 +2382,8 @@
             elements.modalAltInput.dataset.originalValue = img.alt;
             
             // Show/hide UTM preview based on whether image has parent link that originally had utm_content
-            if (img.parentLinkUtmParams && img.hasOriginalUtmContent) {
+            // Hide preview if utm_content was manually edited (alt text won't update it anymore)
+            if (img.parentLinkUtmParams && img.hasOriginalUtmContent && !img.utmContentManuallyEdited) {
                 elements.modalUtmPreviewGroup.style.display = 'block';
                 const sanitized = sanitizeForUTM(img.alt);
                 elements.modalUtmPreview.textContent = sanitized || '(empty)';
@@ -2495,8 +2514,9 @@
             state.images[imageIndex].alt = newAltText;
 
             // If image has a parent link, update its URL to reflect alt->utm_content change
+            // BUT only if utm_content wasn't manually edited via URL
             const img = state.images[imageIndex];
-            if (img.parentLinkHref && img.parentLinkUtmParams) {
+            if (img.parentLinkHref && img.parentLinkUtmParams && !img.utmContentManuallyEdited) {
                 const sanitizedAlt = sanitizeForUTM(newAltText);
 
                 // Keep tracked parent utm_content in sync when it originally existed
