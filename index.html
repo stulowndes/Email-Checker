@@ -386,6 +386,50 @@
             border-color: var(--primary-color);
         }
 
+        /* Links table column widths */
+        #linksTable th:nth-child(1),
+        #linksTable td:nth-child(1) {
+            width: 40px;
+            max-width: 40px;
+        }
+
+        #linksTable th:nth-child(2),
+        #linksTable td:nth-child(2) {
+            width: 450px;
+            max-width: 450px;
+        }
+
+        #linksTable th:nth-child(3),
+        #linksTable td:nth-child(3) {
+            width: 450px;
+            max-width: 450px;
+        }
+
+        /* Images table column widths */
+        #imagesTable th:nth-child(1),
+        #imagesTable td:nth-child(1) {
+            width: 40px;
+            max-width: 40px;
+        }
+
+        #imagesTable th:nth-child(2),
+        #imagesTable td:nth-child(2) {
+            width: 84px;
+            max-width: 84px;
+        }
+
+        #imagesTable th:nth-child(3),
+        #imagesTable td:nth-child(3) {
+            width: 450px;
+            max-width: 450px;
+        }
+
+        #imagesTable th:nth-child(4),
+        #imagesTable td:nth-child(4) {
+            width: 450px;
+            max-width: 450px;
+        }
+
         .validation-badge {
             display: inline-block;
             padding: 4px 8px;
@@ -956,9 +1000,6 @@
                             <tr>
                                 <th>#</th>
                                 <th>Link Text</th>
-                                <th>utm_source</th>
-                                <th>utm_medium</th>
-                                <th>utm_campaign</th>
                                 <th>utm_content</th>
                                 <th>Issues</th>
                             </tr>
@@ -1402,12 +1443,14 @@
                     }
                 }
 
+                const linkText = linkEl.textContent.trim() || '[No text]';
+
                 state.links.push({
                     index,
                     element: linkEl,
                     href,
                     url,
-                    text: linkEl.textContent.trim() || '[No text]',
+                    text: linkText,
                     utmParams,
                     validation: {
                         hasRequiredParams: false,
@@ -1415,6 +1458,105 @@
                         isDuplicate: false
                     }
                 });
+            });
+
+            // Auto-generate utm_content from link text and handle duplicates
+            generateUtmContentForTextLinks();
+        }
+
+        // Auto-generate utm_content for text links based on link text (similar to alt text for images)
+        function generateUtmContentForTextLinks() {
+            // Count occurrences of each sanitized text to detect duplicates
+            const textCounts = new Map();
+            
+            state.links.forEach(link => {
+                const sanitizedText = sanitizeForUTM(link.text);
+                if (sanitizedText) {
+                    textCounts.set(sanitizedText, (textCounts.get(sanitizedText) || 0) + 1);
+                }
+            });
+
+            // Track how many times we've seen each sanitized text
+            const textOccurrences = new Map();
+
+            state.links.forEach(link => {
+                const sanitizedText = sanitizeForUTM(link.text);
+                
+                if (!sanitizedText) return;
+
+                // Determine the final utm_content value
+                let finalUtmContent = sanitizedText;
+                
+                // If this text appears multiple times, append -1, -2, -3, etc.
+                if (textCounts.get(sanitizedText) > 1) {
+                    const occurrenceCount = textOccurrences.get(sanitizedText) || 0;
+                    textOccurrences.set(sanitizedText, occurrenceCount + 1);
+                    finalUtmContent = `${sanitizedText}-${occurrenceCount + 1}`;
+                }
+
+                // Update the link's utm_content
+                link.utmParams.content = finalUtmContent;
+
+                // Update the href with the new utm_content
+                try {
+                    let newHref;
+                    
+                    if (link.href.startsWith('#') && link.href.includes('?')) {
+                        const hashPart = link.href.substring(0, link.href.indexOf('?'));
+                        const queryString = link.href.substring(link.href.indexOf('?'));
+                        const params = new URLSearchParams(queryString);
+                        
+                        if (link.utmParams.source) params.set('utm_source', link.utmParams.source);
+                        if (link.utmParams.medium) params.set('utm_medium', link.utmParams.medium);
+                        if (link.utmParams.campaign) params.set('utm_campaign', link.utmParams.campaign);
+                        params.set('utm_content', finalUtmContent);
+                        if (link.utmParams.term) params.set('utm_term', link.utmParams.term);
+                        
+                        newHref = hashPart + '?' + params.toString();
+                    } else if (link.url) {
+                        // Use the URL object
+                        if (link.utmParams.source) link.url.searchParams.set('utm_source', link.utmParams.source);
+                        if (link.utmParams.medium) link.url.searchParams.set('utm_medium', link.utmParams.medium);
+                        if (link.utmParams.campaign) link.url.searchParams.set('utm_campaign', link.utmParams.campaign);
+                        link.url.searchParams.set('utm_content', finalUtmContent);
+                        if (link.utmParams.term) link.url.searchParams.set('utm_term', link.utmParams.term);
+                        
+                        newHref = link.href.startsWith('http')
+                            ? link.url.toString()
+                            : link.url.pathname + link.url.search + link.url.hash;
+                    } else {
+                        // Fallback: try to manually add utm_content to the query string
+                        const queryStart = link.href.indexOf('?');
+                        if (queryStart !== -1) {
+                            const beforeQuery = link.href.substring(0, queryStart);
+                            const afterQuery = link.href.substring(queryStart + 1);
+                            const params = new URLSearchParams(afterQuery);
+                            
+                            if (link.utmParams.source) params.set('utm_source', link.utmParams.source);
+                            if (link.utmParams.medium) params.set('utm_medium', link.utmParams.medium);
+                            if (link.utmParams.campaign) params.set('utm_campaign', link.utmParams.campaign);
+                            params.set('utm_content', finalUtmContent);
+                            if (link.utmParams.term) params.set('utm_term', link.utmParams.term);
+                            
+                            newHref = beforeQuery + '?' + params.toString();
+                        } else {
+                            // No query string exists, add one with utm_content
+                            const params = new URLSearchParams();
+                            if (link.utmParams.source) params.set('utm_source', link.utmParams.source);
+                            if (link.utmParams.medium) params.set('utm_medium', link.utmParams.medium);
+                            if (link.utmParams.campaign) params.set('utm_campaign', link.utmParams.campaign);
+                            params.set('utm_content', finalUtmContent);
+                            if (link.utmParams.term) params.set('utm_term', link.utmParams.term);
+                            
+                            const separator = link.href.includes('#') ? '?' : (link.href.includes('?') ? '&' : '?');
+                            newHref = link.href + separator + params.toString();
+                        }
+                    }
+                    
+                    link.href = newHref;
+                } catch (e) {
+                    console.warn('Could not update link href with utm_content:', e);
+                }
             });
         }
 
@@ -1794,7 +1936,7 @@
             if (state.links.length === 0) {
                 elements.linksTableBody.innerHTML = `
                     <tr>
-                        <td colspan="8" class="empty-state">
+                        <td colspan="4" class="empty-state">
                             <div class="empty-state-icon">🔍</div>
                             <p>No text links found</p>
                         </td>
@@ -1805,33 +1947,23 @@
                     const issuesDisplay = generateIssuesDisplay(link.validation.warnings, idx, 'link');
                     const isExcluded = isExcludedTextLink(link.text);
                     
-                    // Conditionally render utm_content field
+                    // Display utm_content as non-editable (like images)
                     const utmContentCell = isExcluded 
                         ? '<span style="color: #94a3b8; font-style: italic;">N/A</span>'
-                        : `<div class="url-edit-cell">
-                               <input type="text" 
-                                      value="${escapeHtml(link.utmParams.content)}" 
-                                      data-link-index="${idx}"
-                                      data-original-value="${escapeHtml(link.utmParams.content)}"
-                                      class="utm-content-input">
-                               <button type="button" class="btn-apply hidden" data-link-index="${idx}" data-field="utm-content">Apply</button>
-                           </div>`;
+                        : `<div class="utm-auto" data-link-index="${idx}">${escapeHtml(link.utmParams.content || '(empty)')}</div>`;
 
                     return `
                         <tr class="row-main">
                             <td rowspan="2">${idx + 1}</td>
                             <td>${escapeHtml(link.text)}</td>
-                            <td>${escapeHtml(link.utmParams.source)}</td>
-                            <td>${escapeHtml(link.utmParams.medium)}</td>
-                            <td>${escapeHtml(link.utmParams.campaign)}</td>
                             <td class="editable-cell">
                                 ${utmContentCell}
                             </td>
                             <td>${issuesDisplay}</td>
                         </tr>
                         <tr class="row-url">
-                            <td colspan="6">
-                                <span class="url-cell-label">URL:</span>
+                            <td colspan="3">
+                                <span class="url-cell-label">Link URL:</span>
                                 <div class="url-edit-cell">
                                     <input type="text" 
                                            class="url-editable link-url-input"
@@ -1918,6 +2050,12 @@
                                 state.links[linkIndex].url = url;
                             }
                             state.links[linkIndex].utmParams = utmParams;
+                            
+                            // Update utm_content display in real-time if manually edited in URL
+                            const utmDisplay = document.querySelector(`.utm-auto[data-link-index="${linkIndex}"]`);
+                            if (utmDisplay) {
+                                utmDisplay.textContent = utmParams.content || '(empty)';
+                            }
                         } catch (err) {
                             // Invalid URL - reset params
                             state.links[linkIndex].url = null;
@@ -1942,78 +2080,6 @@
                         renderWarnings();
                     });
                 });
-
-                // Add event listeners for utm_content input fields
-                document.querySelectorAll('.utm-content-input').forEach(input => {
-                    // Show/hide apply button as user types
-                    input.addEventListener('input', (e) => {
-                        const linkIndex = parseInt(e.target.dataset.linkIndex);
-                        const originalValue = e.target.dataset.originalValue;
-                        const currentValue = e.target.value;
-                        const hasChanged = currentValue !== originalValue;
-                        
-                        // Show/hide apply button
-                        const applyBtn = e.target.parentElement.querySelector('.btn-apply[data-field="utm-content"]');
-                        if (applyBtn) {
-                            if (hasChanged) {
-                                applyBtn.classList.remove('hidden');
-                            } else {
-                                applyBtn.classList.add('hidden');
-                            }
-                        }
-                    });
-                });
-
-                // Add event listeners for utm_content Apply buttons
-                document.querySelectorAll('.utm-content-input + .btn-apply[data-field="utm-content"]').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const linkIndex = parseInt(e.target.dataset.linkIndex);
-                        const input = e.target.parentElement.querySelector('.utm-content-input');
-                        const rawValue = input.value;
-                        const sanitizedValue = sanitizeForUTM(rawValue);
-                        
-                        // Store sanitized value in state
-                        state.links[linkIndex].utmParams.content = sanitizedValue;
-                        
-                        // Update input field to show sanitized value
-                        input.value = sanitizedValue;
-                        
-                        // Rebuild the URL with sanitized parameter
-                        const link = state.links[linkIndex];
-                        
-                        try {
-                            if (link.href.startsWith('#') && link.href.includes('?')) {
-                                const hashPart = link.href.substring(0, link.href.indexOf('?'));
-                                const params = new URLSearchParams(link.href.substring(link.href.indexOf('?')));
-                                params.set('utm_content', sanitizedValue);
-                                link.href = hashPart + '?' + params.toString();
-                            } else {
-                                const url = new URL(link.href, 'http://dummy.com');
-                                url.searchParams.set('utm_content', sanitizedValue);
-                                
-                                // Preserve relative vs absolute URL format
-                                if (!link.href.startsWith('http')) {
-                                    link.href = url.pathname + url.search + url.hash;
-                                } else {
-                                    link.href = url.toString();
-                                }
-                            }
-                        } catch (e) {
-                            console.warn('Could not update link URL:', e);
-                        }
-                        
-                        // Update original value to reflect the new state
-                        input.dataset.originalValue = sanitizedValue;
-                        
-                        // Hide the apply button
-                        e.target.classList.add('hidden');
-                        
-                        // Validate and re-render
-                        validateAll();
-                        renderTables();
-                        renderWarnings();
-                    });
-                });
             }
 
             // Render images table
@@ -2030,8 +2096,8 @@
                 elements.imagesTableBody.innerHTML = state.images.map((img, idx) => {
                     const issuesDisplay = generateIssuesDisplay(img.validation.warnings, idx, 'image');
 
-                    // Only show utm_content if image has a parent link that originally had utm_content
-                    const utmContent = (img.parentLinkUtmParams && img.hasOriginalUtmContent) ? sanitizeForUTM(img.alt) : null;
+                    // Show utm_content from current state (which may be from URL override or auto-generated from alt)
+                    const utmContent = (img.parentLinkUtmParams && img.hasOriginalUtmContent) ? img.parentLinkUtmParams.content : null;
                     const utmContentDisplay = (img.parentLinkUtmParams && img.hasOriginalUtmContent)
                         ? `<div class="utm-auto" data-image-index="${idx}">${escapeHtml(utmContent || '(empty)')}</div>`
                         : '<span style="color: #94a3b8; font-style: italic;">N/A</span>';
@@ -2152,6 +2218,12 @@
                                 };
                             }
                             state.images[imageIndex].parentLinkUtmParams = utmParams;
+                            
+                            // Update utm_content display in real-time if manually edited in URL
+                            const utmDisplay = document.querySelector(`.utm-auto[data-image-index="${imageIndex}"]`);
+                            if (utmDisplay && state.images[imageIndex].hasOriginalUtmContent) {
+                                utmDisplay.textContent = utmParams.content || '(empty)';
+                            }
                         } catch (err) {
                             // Invalid URL - reset params
                             state.images[imageIndex].parentLinkUtmParams = null;
@@ -2775,13 +2847,12 @@
                         // Use the updated href from state (may have been edited)
                         const parentUrl = img.parentLinkHref;
                         const originalParentUrl = img.parentLink.getAttribute('href');
-                        const sanitizedAlt = sanitizeForUTM(img.alt);
 
                         const utmUpdates = {
                             utm_source: img.parentLinkUtmParams.source,
                             utm_medium: img.parentLinkUtmParams.medium,
                             utm_campaign: img.parentLinkUtmParams.campaign,
-                            utm_content: img.hasOriginalUtmContent ? sanitizedAlt : null
+                            utm_content: img.hasOriginalUtmContent ? img.parentLinkUtmParams.content : null
                         };
 
                         const newHref = updateHrefWithUTMParamsRaw(parentUrl, utmUpdates);
